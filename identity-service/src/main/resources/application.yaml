@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: Task1
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/adlita_project1
+    username: postgres
+    password: 12022005
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+    show-sql: true
+
+    properties:
+      hibernate:
+        format_sql: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger
+
+jwt:
+  secret: ApeVFjUOyTmk7XYwgcYwIEsix1mALAsQhftYQqWHE8P6kcnqbZv0Uxj9HduKEvjXzz0sVYCG0ZjSBtmxadtAiQ==
+  expiration: 86400000
+  refresh-expiration: 604800000
+
+app:
+  cookie:
+    secure: false
+    same-site: Lax
+    access-token-name: accessToken
+    refresh-token-name: refreshToken
+    refresh-token-path: /api/auth
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+      - http://localhost:5173
+
+
+server:
+  port: 8081
