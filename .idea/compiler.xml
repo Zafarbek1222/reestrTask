@@ -7,18 +7,13 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="api-gateway" />
-        <module name="reference-service" />
-        <module name="function-catalog-service" />
-      </profile>
-      <profile name="Annotation profile for task1-microservices" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.38/lombok-1.18.38.jar" />
-        </processorPath>
         <module name="Task1" />
+        <module name="reference-service" />
+        <module name="api-gateway" />
+        <module name="function-catalog-service (1)" />
+        <module name="function-catalog-service" />
+        <module name="eureka-server" />
+        <module name="function-catalog-service (2)" />
       </profile>
     </annotationProcessing>
   </component>
@@ -26,7 +21,10 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="Task1" options="-parameters" />
       <module name="api-gateway" options="-parameters" />
+      <module name="eureka-server" options="-parameters" />
       <module name="function-catalog-service" options="-parameters" />
+      <module name="function-catalog-service (1)" options="-parameters" />
+      <module name="function-catalog-service (2)" options="-parameters" />
       <module name="reference-service" options="-parameters" />
     </option>
   </component>
