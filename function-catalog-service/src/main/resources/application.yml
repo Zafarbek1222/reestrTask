@@ -23,3 +23,7 @@ eureka:
 
 jwt:
   secret: ApeVFjUOyTmk7XYwgcYwIEsix1mALAsQhftYQqWHE8P6kcnqbZv0Uxj9HduKEvjXzz0sVYCG0ZjSBtmxadtAiQ==
+
+springdoc:
+  swagger-ui:
+    path: /swagger
