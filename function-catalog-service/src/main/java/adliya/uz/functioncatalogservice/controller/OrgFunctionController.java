@@ -1,9 +1,12 @@
 package adliya.uz.functioncatalogservice.controller;
 
+import adliya.uz.functioncatalogservice.dto.UpdateRequirementsRequest;
 import adliya.uz.functioncatalogservice.entity.OrgFunction;
 import adliya.uz.functioncatalogservice.service.OrgFunctionService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,5 +34,12 @@ public class OrgFunctionController {
     @GetMapping("/{id}")
     public ResponseEntity<OrgFunction> getById(@PathVariable Long id) {
         return ResponseEntity.ok(orgFunctionService.getById(id));
+    }
+
+    @PutMapping("/{id}/requirements")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ORG_ADMIN')")
+    public ResponseEntity<OrgFunction> updateRequirements(
+            @PathVariable Long id, @Valid @RequestBody UpdateRequirementsRequest request) {
+        return ResponseEntity.ok(orgFunctionService.updateRequirements(id, request.getRequirements()));
     }
 }
