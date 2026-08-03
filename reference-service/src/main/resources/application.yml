@@ -7,7 +7,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/reference_service_db
     username: postgres
-    password: 12022005
+    password: doniyor2007
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -20,6 +20,9 @@ eureka:
       defaultZone: http://localhost:8761/eureka
   instance:
     prefer-ip-address: true
+
+jwt:
+  secret: ApeVFjUOyTmk7XYwgcYwIEsix1mALAsQhftYQqWHE8P6kcnqbZv0Uxj9HduKEvjXzz0sVYCG0ZjSBtmxadtAiQ==
 
 springdoc:
   swagger-ui:

@@ -12,7 +12,7 @@ spring:
             - id: reference-service
               uri: lb://reference-service
               predicates:
-                - Path=/api/regions/**
+                - Path=/api/regions/**,/api/languages/**
             - id: function-catalog-service
               uri: lb://function-catalog-service
               predicates:
