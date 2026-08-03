@@ -1,6 +1,8 @@
 package adliya.uz.referenceservice.config;
 
+import adliya.uz.referenceservice.entity.Language;
 import adliya.uz.referenceservice.entity.Region;
+import adliya.uz.referenceservice.repository.LanguageRepository;
 import adliya.uz.referenceservice.repository.RegionRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -11,15 +13,23 @@ import java.util.List;
 public class DataInitializer implements CommandLineRunner {
 
     private record RegionSeed(String name, String code) {}
+    private record LanguageSeed(String code, String name, String nativeName) {}
 
     private final RegionRepository regionRepository;
+    private final LanguageRepository languageRepository;
 
-    public DataInitializer(RegionRepository regionRepository) {
+    public DataInitializer(RegionRepository regionRepository, LanguageRepository languageRepository) {
         this.regionRepository = regionRepository;
+        this.languageRepository = languageRepository;
     }
 
     @Override
     public void run(String... args) {
+        seedRegions();
+        seedLanguages();
+    }
+
+    private void seedRegions() {
         List<RegionSeed> seeds = List.of(
                 new RegionSeed("Tashkent", "1700"),
                 new RegionSeed("Samarkand", "1706"),
@@ -35,6 +45,26 @@ public class DataInitializer implements CommandLineRunner {
                         .code(seed.code())
                         .build();
                 regionRepository.save(region);
+            }
+        }
+    }
+
+    private void seedLanguages() {
+        List<LanguageSeed> seeds = List.of(
+                new LanguageSeed("en", "English", "English"),
+                new LanguageSeed("ru", "Russian", "Русский"),
+                new LanguageSeed("uz", "Uzbek", "Oʻzbekcha")
+        );
+
+        for (LanguageSeed seed : seeds) {
+            if (!languageRepository.existsByCode(seed.code())) {
+                Language language = Language.builder()
+                        .code(seed.code())
+                        .name(seed.name())
+                        .nativeName(seed.nativeName())
+                        .defaultLanguage(true)
+                        .build();
+                languageRepository.save(language);
             }
         }
     }
