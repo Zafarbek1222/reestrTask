@@ -12,13 +12,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class OrganizationService {
 
     private final OrganizationRepository organizationRepository;
+    private final OrganizationTranslationService translationService;
 
+    @Transactional
     public Organization create(CreateOrganizationRequest request) {
         if (organizationRepository.existsByName(request.getName())) {
             throw new OrganizationAlreadyExistsException(
@@ -31,7 +34,9 @@ public class OrganizationService {
                 .enabled(true)
                 .build();
 
-        return organizationRepository.save(org);
+        org = organizationRepository.save(org);
+        translationService.translateChangedFields(org, true, request.getDescription() != null);
+        return org;
     }
 
     public Organization getById(Long id) {
@@ -47,7 +52,11 @@ public class OrganizationService {
     public Organization update(Long id, UpdateOrganizationRequest request) {
         Organization org = getById(id);
 
-        if (request.getName() != null && !request.getName().equals(org.getName())) {
+        boolean nameChanged = request.getName() != null && !request.getName().equals(org.getName());
+        boolean descriptionChanged = request.getDescription() != null
+                && !Objects.equals(request.getDescription(), org.getDescription());
+
+        if (nameChanged) {
             if (organizationRepository.existsByName(request.getName())) {
                 throw new OrganizationAlreadyExistsException(
                         "Organization already exists with name: " + request.getName());
@@ -55,11 +64,13 @@ public class OrganizationService {
             org.setName(request.getName());
         }
 
-        if (request.getDescription() != null) {
+        if (descriptionChanged) {
             org.setDescription(request.getDescription());
         }
 
-        return organizationRepository.save(org);
+        org = organizationRepository.save(org);
+        translationService.translateChangedFields(org, nameChanged, descriptionChanged);
+        return org;
     }
 
     @Transactional

@@ -1,9 +1,8 @@
 package adliya.uz.referenceservice.config;
 
-import adliya.uz.referenceservice.entity.Language;
 import adliya.uz.referenceservice.entity.Region;
-import adliya.uz.referenceservice.repository.LanguageRepository;
 import adliya.uz.referenceservice.repository.RegionRepository;
+import adliya.uz.referenceservice.service.InterfaceTranslationService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -12,21 +11,24 @@ import java.util.List;
 @Component
 public class DataInitializer implements CommandLineRunner {
 
-    private record RegionSeed(String name, String code) {}
-    private record LanguageSeed(String code, String name, String nativeName) {}
+    private record RegionSeed(String name, String code) {
+    }
 
     private final RegionRepository regionRepository;
-    private final LanguageRepository languageRepository;
+    private final InterfaceTranslationService translationService;
 
-    public DataInitializer(RegionRepository regionRepository, LanguageRepository languageRepository) {
+    public DataInitializer(
+            RegionRepository regionRepository,
+            InterfaceTranslationService translationService
+    ) {
         this.regionRepository = regionRepository;
-        this.languageRepository = languageRepository;
+        this.translationService = translationService;
     }
 
     @Override
     public void run(String... args) {
         seedRegions();
-        seedLanguages();
+        translationService.seedSourceTranslations();
     }
 
     private void seedRegions() {
@@ -40,31 +42,10 @@ public class DataInitializer implements CommandLineRunner {
 
         for (RegionSeed seed : seeds) {
             if (!regionRepository.existsByCode(seed.code())) {
-                Region region = Region.builder()
+                regionRepository.save(Region.builder()
                         .name(seed.name())
                         .code(seed.code())
-                        .build();
-                regionRepository.save(region);
-            }
-        }
-    }
-
-    private void seedLanguages() {
-        List<LanguageSeed> seeds = List.of(
-                new LanguageSeed("en", "English", "English"),
-                new LanguageSeed("ru", "Russian", "Русский"),
-                new LanguageSeed("uz", "Uzbek", "Oʻzbekcha")
-        );
-
-        for (LanguageSeed seed : seeds) {
-            if (!languageRepository.existsByCode(seed.code())) {
-                Language language = Language.builder()
-                        .code(seed.code())
-                        .name(seed.name())
-                        .nativeName(seed.nativeName())
-                        .defaultLanguage(true)
-                        .build();
-                languageRepository.save(language);
+                        .build());
             }
         }
     }

@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: function-catalog-service
+  config:
+    import: optional:file:.env[.properties],optional:file:../.env[.properties]
   datasource:
     url: jdbc:postgresql://localhost:5432/function_catalog_db
     username: postgres
@@ -27,3 +29,9 @@ jwt:
 springdoc:
   swagger-ui:
     path: /swagger
+
+azure:
+  translator:
+    endpoint: ${AZURE_TRANSLATOR_ENDPOINT:https://api.cognitive.microsofttranslator.com}
+    key: ${AZURE_TRANSLATOR_KEY:}
+    region: ${AZURE_TRANSLATOR_REGION:}

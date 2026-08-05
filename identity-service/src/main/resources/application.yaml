@@ -2,6 +2,9 @@ spring:
   application:
     name: identity-service
 
+  config:
+    import: optional:file:.env[.properties],optional:file:../.env[.properties]
+
   datasource:
     url: jdbc:postgresql://localhost:5432/adlita_project1
     username: postgres
@@ -46,3 +49,12 @@ eureka:
       defaultZone: http://localhost:8761/eureka
   instance:
     prefer-ip-address: true
+
+azure:
+  translator:
+    endpoint: ${AZURE_TRANSLATOR_ENDPOINT:https://api.cognitive.microsofttranslator.com}
+    key: ${AZURE_TRANSLATOR_KEY:}
+    region: ${AZURE_TRANSLATOR_REGION:}
+
+reference-service:
+  base-url: ${REFERENCE_SERVICE_BASE_URL:http://localhost:8084}

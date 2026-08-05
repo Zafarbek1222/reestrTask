@@ -29,6 +29,11 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/adlita_project1
       SPRING_DATASOURCE_PASSWORD: postgres
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+      AZURE_TRANSLATOR_ENDPOINT: ${AZURE_TRANSLATOR_ENDPOINT}
+      AZURE_TRANSLATOR_KEY: ${AZURE_TRANSLATOR_KEY}
+      AZURE_TRANSLATOR_REGION: ${AZURE_TRANSLATOR_REGION}
+      FUNCTION_CATALOG_SERVICE_BASE_URL: http://function-catalog-service:8085
+      REFERENCE_SERVICE_BASE_URL: http://reference-service:8084
     depends_on:
       - postgres
       - eureka-server
@@ -42,6 +47,9 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/reference_service_db
       SPRING_DATASOURCE_PASSWORD: postgres
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+      AZURE_TRANSLATOR_ENDPOINT: ${AZURE_TRANSLATOR_ENDPOINT}
+      AZURE_TRANSLATOR_KEY: ${AZURE_TRANSLATOR_KEY}
+      AZURE_TRANSLATOR_REGION: ${AZURE_TRANSLATOR_REGION}
     depends_on:
       - postgres
       - eureka-server
@@ -55,6 +63,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/function_catalog_db
       SPRING_DATASOURCE_PASSWORD: postgres
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+      AZURE_TRANSLATOR_ENDPOINT: ${AZURE_TRANSLATOR_ENDPOINT}
+      AZURE_TRANSLATOR_KEY: ${AZURE_TRANSLATOR_KEY}
+      AZURE_TRANSLATOR_REGION: ${AZURE_TRANSLATOR_REGION}
+      IDENTITY_SERVICE_BASE_URL: http://identity-service:8081
     depends_on:
       - postgres
       - eureka-server

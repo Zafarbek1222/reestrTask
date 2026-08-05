@@ -43,7 +43,13 @@ public class SecurityConfig {
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/languages",
-                                "/api/languages/search"
+                                "/api/languages/search",
+                                "/api/interface-translations/**"
+                        ).permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/internal/interface-translations/**"
                         ).permitAll()
 
                         .requestMatchers(
