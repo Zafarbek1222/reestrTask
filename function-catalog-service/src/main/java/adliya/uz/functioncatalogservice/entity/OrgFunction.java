@@ -6,6 +6,11 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Entity
 @Table(name = "org_functions")
@@ -25,6 +30,16 @@ public class OrgFunction {
 
     @Column(length = 500)
     private String description;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    @Builder.Default
+    private Map<String, TranslatedText> nameTranslations = new LinkedHashMap<>();
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    @Builder.Default
+    private Map<String, TranslatedText> descriptionTranslations = new LinkedHashMap<>();
 
     @Column(nullable = false)
     private Long organizationId;

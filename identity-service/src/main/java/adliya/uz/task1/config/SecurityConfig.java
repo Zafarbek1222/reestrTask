@@ -54,6 +54,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").authenticated()
                         .requestMatchers("/api/user/**").authenticated()
                         .requestMatchers("/api/public/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/languages", "/api/languages/catalog").permitAll()
 
                         .anyRequest().authenticated()
                 )

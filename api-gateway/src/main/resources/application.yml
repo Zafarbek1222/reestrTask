@@ -8,11 +8,34 @@ spring:
     gateway:
       server:
         webflux:
+          globalcors:
+            add-to-simple-url-handler-mapping: true
+            cors-configurations:
+              '[/**]':
+                allowedOrigins:
+                  - http://localhost:3000
+                  - http://localhost:5173
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - PATCH
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders:
+                  - "*"
+                allowCredentials: true
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin, RETAIN_FIRST
           routes:
+            - id: identity-language-service
+              uri: lb://identity-service
+              predicates:
+                - Path=/api/languages,/api/languages/**
             - id: reference-service
               uri: lb://reference-service
               predicates:
-                - Path=/api/regions/**,/api/languages/**
+                - Path=/api/regions/**,/api/interface-translations/**
             - id: function-catalog-service
               uri: lb://function-catalog-service
               predicates:
