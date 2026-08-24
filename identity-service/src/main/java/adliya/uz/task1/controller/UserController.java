@@ -15,12 +15,6 @@ public class UserController {
 
     private final UserService userService;
 
-    @GetMapping("/profile")
-    public String profile() {
-        return "Hello USER";
-    }
-
-
     @PostMapping
     public ResponseEntity<User> createUser(@RequestBody User user) {
         return ResponseEntity.ok(userService.save(user));

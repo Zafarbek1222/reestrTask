@@ -1,6 +1,5 @@
 package adliya.uz.referenceservice.security;
 
-import adliya.uz.referenceservice.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -13,6 +13,5 @@
         <module>api-gateway</module>
         <module>reference-service</module>
         <module>function-catalog-service</module>
-        <module>eureka-server</module>
     </modules>
 </project>

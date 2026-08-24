@@ -1,25 +1,18 @@
 package adliya.uz.task1.service;
 
 import adliya.uz.task1.dto.LoginRequest;
+import adliya.uz.task1.dto.ChangePasswordRequest;
 import adliya.uz.task1.dto.UserResponse;
 import adliya.uz.task1.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import adliya.uz.task1.dto.ChangePasswordRequest;
-import adliya.uz.task1.entity.User;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-
-import adliya.uz.task1.dto.ChangePasswordRequest;
-import adliya.uz.task1.entity.User;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 @RequiredArgsConstructor

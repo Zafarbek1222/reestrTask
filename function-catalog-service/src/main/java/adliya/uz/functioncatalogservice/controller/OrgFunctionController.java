@@ -4,7 +4,6 @@ import adliya.uz.functioncatalogservice.dto.CreateOrgFunctionRequest;
 import adliya.uz.functioncatalogservice.dto.OrgFunctionResponse;
 import adliya.uz.functioncatalogservice.dto.UpdateOrgFunctionRequest;
 import adliya.uz.functioncatalogservice.dto.UpdateRequirementsRequest;
-import adliya.uz.functioncatalogservice.entity.OrgFunction;
 import adliya.uz.functioncatalogservice.service.OrgFunctionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
