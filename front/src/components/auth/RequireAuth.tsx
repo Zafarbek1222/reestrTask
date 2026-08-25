@@ -20,6 +20,10 @@ export function RequireAuth({ roles }: {roles?: RoleName[];}) {
 
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
 
+  if (user.mustChangePassword && location.pathname !== '/settings/security') {
+    return <Navigate to="/settings/security" replace />;
+  }
+
   if (roles && !roles.includes(user.role)) {
     return (
       <div className="mx-auto w-full max-w-xl px-4 py-16">

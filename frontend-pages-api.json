@@ -14,8 +14,9 @@
       "fetchExample": "fetch(url, { method, headers: {'Content-Type': 'application/json'}, credentials: 'include', body: JSON.stringify(data) })"
     },
     "authentication": {
-      "loginResult": "POST /api/auth/login устанавливает HttpOnly cookies accessToken и refreshToken.",
+      "loginResult": "POST /api/auth/login устанавливает HttpOnly accessToken; refreshToken выдаётся только после обязательной смены bootstrap-пароля.",
       "protectedRequests": "Не передавать Authorization header. Браузер должен автоматически отправить cookies благодаря credentials: 'include'.",
+      "forcedPasswordChange": "Если mustChangePassword=true, направить на /settings/security. До успешной смены пароля backend разрешает только /api/auth/me, /api/auth/change-password, /api/auth/logout и повторный login.",
       "on401": "Вызвать POST http://localhost:8082/api/auth/refresh без body. При 200 повторить исходный запрос; при 401 открыть /login.",
       "logout": "POST http://localhost:8082/api/auth/logout и перейти на /login."
     }
@@ -34,11 +35,11 @@
             "email": "string, обязательное, корректный email",
             "password": "string, обязательное"
           },
-          "requestExample": { "email": "admin@reestr.uz", "password": "admin123" },
+          "requestExample": { "email": "super-admin@example.com", "password": "<deployment-secret>" },
           "success": {
             "status": 200,
-            "body": { "id": 1, "firstName": "Super", "lastName": "Admin", "email": "admin@reestr.uz", "phone": null, "role": "ROLE_SUPER_ADMIN", "enabled": true, "organizationIds": [] },
-            "sideEffect": "Устанавливает cookies accessToken и refreshToken. После успеха вызвать GET /api/auth/me и направить пользователя по его role."
+            "body": { "id": 1, "firstName": "Super", "lastName": "Admin", "email": "super-admin@example.com", "phone": null, "role": "ROLE_SUPER_ADMIN", "enabled": true, "mustChangePassword": true, "organizationIds": [] },
+            "sideEffect": "Если mustChangePassword=true, refreshToken не выдаётся и пользователь направляется на /settings/security; иначе направить по его role."
           },
           "errors": [400, 401, 403]
         }
@@ -63,7 +64,7 @@
           "url": "http://localhost:8082/api/auth/change-password",
           "accepts": { "currentPassword": "string, обязательное", "newPassword": "string, обязательное, 8–100 символов" },
           "requestExample": { "currentPassword": "oldPassword", "newPassword": "newPassword123" },
-          "success": { "status": 200, "body": "Password changed successfully." },
+          "success": { "status": 200, "body": "Password changed successfully.", "sideEffect": "Replaces accessToken and refreshToken cookies with a session whose mustChangePassword claim is false." },
           "errors": [400, 401]
         },
         {

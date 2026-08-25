@@ -18,6 +18,7 @@ export interface AuthUser {
   phone: string | null;
   role: RoleName;
   enabled: boolean;
+  mustChangePassword: boolean;
   organizationIds: number[];
 }
 

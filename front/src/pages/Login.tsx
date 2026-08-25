@@ -25,7 +25,9 @@ export function Login() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (user) navigate(homeRouteForRole(user.role), { replace: true });
+    if (user) {
+      navigate(user.mustChangePassword ? '/settings/security' : homeRouteForRole(user.role), { replace: true });
+    }
   }, [user, navigate]);
 
   const validate = (): boolean => {
@@ -46,7 +48,10 @@ export function Login() {
       const authenticated = await signIn(email.trim(), password);
       toast.success(t('login.success'));
       const from = (location.state as {from?: string;} | null)?.from;
-      navigate(from ?? homeRouteForRole(authenticated.role), { replace: true });
+      navigate(
+        authenticated.mustChangePassword ? '/settings/security' : from ?? homeRouteForRole(authenticated.role),
+        { replace: true }
+      );
     } catch (error) {
       const status = statusOf(error);
       setErrors(fieldErrorsOf(error));

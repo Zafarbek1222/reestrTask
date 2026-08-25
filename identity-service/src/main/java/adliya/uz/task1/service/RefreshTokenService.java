@@ -28,6 +28,10 @@ public class RefreshTokenService {
 
     @Transactional
     public String createRefreshToken(User user) {
+        if (Boolean.TRUE.equals(user.getMustChangePassword())) {
+            throw new InvalidRefreshTokenException("Password change is required before issuing a refresh token");
+        }
+
         String rawToken = generateRawToken();
 
         RefreshToken entity = RefreshToken.builder()
@@ -44,6 +48,11 @@ public class RefreshTokenService {
     public RotationResult rotate(String rawToken) {
         RefreshToken stored = refreshTokenRepository.findByTokenHash(hash(rawToken))
                 .orElseThrow(() -> new InvalidRefreshTokenException("Unknown refresh token"));
+
+        if (Boolean.TRUE.equals(stored.getUser().getMustChangePassword())) {
+            refreshTokenRepository.revokeAllByUser(stored.getUser());
+            throw new InvalidRefreshTokenException("Password change is required before refreshing the session");
+        }
 
         if (stored.isRevoked()) {
             refreshTokenRepository.revokeAllByUser(stored.getUser());

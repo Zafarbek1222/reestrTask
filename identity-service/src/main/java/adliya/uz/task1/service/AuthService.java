@@ -40,7 +40,7 @@ public class AuthService {
         return UserResponse.from(user);
     }
 
-    public void changePassword(ChangePasswordRequest request) {
+    public User changePassword(ChangePasswordRequest request) {
         User user = userService.getCurrentUser();
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
@@ -48,7 +48,8 @@ public class AuthService {
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        userService.save(user);
+        user.setMustChangePassword(false);
+        return userService.save(user);
     }
 
 

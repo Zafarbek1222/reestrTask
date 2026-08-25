@@ -14,7 +14,7 @@ import { fullName, roleLabel } from '../utils/format';
 /** NOTE: /api/user/profile is never called — account data comes from GET /api/auth/me. */
 export function SecuritySettings() {
   const { t } = useI18n();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -34,6 +34,7 @@ export function SecuritySettings() {
     setSubmitting(true);
     try {
       await changePassword({ currentPassword, newPassword });
+      await refreshUser();
       toast.success(t('security.success'));
       setCurrentPassword('');
       setNewPassword('');

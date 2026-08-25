@@ -51,6 +51,7 @@ class UserSerializationTest {
                 .phone(null)
                 .role("ROLE_SUPER_ADMIN")
                 .enabled(true)
+                .mustChangePassword(true)
                 .createdAt(LocalDateTime.of(2026, 8, 25, 10, 0))
                 .organizationIds(Set.of())
                 .build();
@@ -58,5 +59,6 @@ class UserSerializationTest {
         JsonNode tree = objectMapper.valueToTree(response);
 
         assertThat(tree.has("password")).isFalse();
+        assertThat(tree.path("mustChangePassword").asBoolean()).isTrue();
     }
 }

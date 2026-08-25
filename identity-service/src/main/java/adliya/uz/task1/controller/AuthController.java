@@ -80,7 +80,17 @@ public class AuthController {
 
     private ResponseEntity<UserResponse> withAuthCookies(HttpStatus status, User user) {
         ResponseCookie accessCookie = cookieUtil.createAccessCookie(jwtService.generateToken(user));
-        ResponseCookie refreshCookie = cookieUtil.createRefreshCookie(refreshTokenService.createRefreshToken(user));
+
+        if (Boolean.TRUE.equals(user.getMustChangePassword())) {
+            return ResponseEntity.status(status)
+                    .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+                    .header(HttpHeaders.SET_COOKIE, cookieUtil.createLogoutRefreshCookie().toString())
+                    .body(UserResponse.from(user));
+        }
+
+        ResponseCookie refreshCookie = cookieUtil.createRefreshCookie(
+                refreshTokenService.createRefreshToken(user)
+        );
 
         return ResponseEntity.status(status)
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
@@ -97,8 +107,16 @@ public class AuthController {
 
     @PostMapping("/change-password")
     public ResponseEntity<String> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-        authService.changePassword(request);
-        return ResponseEntity.ok("Password changed successfully.");
+        User user = authService.changePassword(request);
+        ResponseCookie accessCookie = cookieUtil.createAccessCookie(jwtService.generateToken(user));
+        ResponseCookie refreshCookie = cookieUtil.createRefreshCookie(
+                refreshTokenService.createRefreshToken(user)
+        );
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .body("Password changed successfully.");
     }
     
 

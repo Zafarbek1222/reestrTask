@@ -3,15 +3,16 @@ package adliya.uz.task1.config.security;
 import adliya.uz.task1.entity.Organization;
 import adliya.uz.task1.entity.User;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.UnsupportedJwtException;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Date;
 import java.util.List;
 import java.util.function.Function;
@@ -20,12 +21,17 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class JwtService {
 
+    private static final String JWT_ALGORITHM = "RS256";
+
     private final JwtProperties jwtProperties;
-    private SecretKey secretKey;
+    private RSAPrivateKey privateKey;
+    private RSAPublicKey publicKey;
 
     @PostConstruct
     public void init() {
-        secretKey = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
+        privateKey = RsaKeyLoader.loadPrivateKey(jwtProperties.getPrivateKey());
+        publicKey = RsaKeyLoader.loadPublicKey(jwtProperties.getPublicKey());
+        RsaKeyLoader.requireMatchingPair(privateKey, publicKey);
     }
 
     public String generateToken(User user) {
@@ -37,9 +43,10 @@ public class JwtService {
                 .subject(user.getEmail())
                 .claim("role", user.getRole().getName())
                 .claim("organizationIds", organizationIds)
+                .claim("mustChangePassword", Boolean.TRUE.equals(user.getMustChangePassword()))
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
-                .signWith(secretKey)
+                .signWith(privateKey, Jwts.SIG.RS256)
                 .compact();
     }
 
@@ -53,11 +60,16 @@ public class JwtService {
     }
 
     public Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(secretKey)
+        Jws<Claims> parsedToken = Jwts.parser()
+                .verifyWith(publicKey)
                 .build()
-                .parseSignedClaims(token)
-                .getPayload();
+                .parseSignedClaims(token);
+
+        if (!JWT_ALGORITHM.equals(parsedToken.getHeader().getAlgorithm())) {
+            throw new UnsupportedJwtException("Only RS256 JWT signatures are accepted");
+        }
+
+        return parsedToken.getPayload();
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {

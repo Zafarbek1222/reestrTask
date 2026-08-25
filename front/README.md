@@ -39,9 +39,7 @@ The gateway must allow the deployed frontend origin with CORS and credentials.
 
 ## Backend login
 
-The backend seeds this development account on first startup:
-
-- Email: `admin@reestr.uz`
-- Password: `admin123`
-
-Change or remove these credentials before production use.
+The backend does not contain built-in administrator credentials. The first
+`SUPER_ADMIN` is provisioned from deployment environment variables documented
+in the root `README.md`; obtain the one-time credential through the project's
+secure operational channel.

@@ -23,6 +23,7 @@ public class UserResponse {
     private String phone;
     private String role;
     private Boolean enabled;
+    private Boolean mustChangePassword;
     private LocalDateTime createdAt;
     private Set<Long> organizationIds;
 
@@ -35,6 +36,7 @@ public class UserResponse {
                 .phone(user.getPhone())
                 .role(user.getRole().getName())
                 .enabled(user.getEnabled())
+                .mustChangePassword(user.getMustChangePassword())
                 .createdAt(user.getCreatedAt())
                 .organizationIds(user.getOrganizations().stream()
                         .map(Organization::getId)

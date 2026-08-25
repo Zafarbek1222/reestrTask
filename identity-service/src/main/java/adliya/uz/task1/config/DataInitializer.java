@@ -2,12 +2,10 @@ package adliya.uz.task1.config;
 
 import adliya.uz.task1.entity.Permission;
 import adliya.uz.task1.entity.Role;
-import adliya.uz.task1.entity.User;
 import adliya.uz.task1.repository.PermissionRepository;
 import adliya.uz.task1.repository.RoleRepository;
-import adliya.uz.task1.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,19 +14,15 @@ import java.util.List;
 import java.util.Set;
 
 @Component
+@Order(0)
 public class DataInitializer implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
-    private final UserRepository userRepository;
     private final PermissionRepository permissionRepository;
-    private final PasswordEncoder passwordEncoder;
 
-    public DataInitializer(RoleRepository roleRepository, UserRepository userRepository,
-                           PermissionRepository permissionRepository, PasswordEncoder passwordEncoder) {
+    public DataInitializer(RoleRepository roleRepository, PermissionRepository permissionRepository) {
         this.roleRepository = roleRepository;
-        this.userRepository = userRepository;
         this.permissionRepository = permissionRepository;
-        this.passwordEncoder = passwordEncoder;
     }
 
     private record PermissionSeed(String code, String name, String category) {}
@@ -109,18 +103,5 @@ public class DataInitializer implements CommandLineRunner {
             roleRepository.save(moderatorRole);
         }
 
-        //  Seed super admin
-        String adminEmail = "admin@reestr.uz";
-        if (userRepository.findByEmail(adminEmail).isEmpty()) {
-            User superAdmin = User.builder()
-                    .email(adminEmail)
-                    .password(passwordEncoder.encode("admin123"))
-                    .role(superAdminRole)
-                    .firstName("Super")
-                    .lastName("Admin")
-                    .build();
-            userRepository.save(superAdmin);
-            System.out.println("Super Admin muvaffaqiyatli yaratildi! Email: admin@reestr.uz, Parol: admin123");
-        }
     }
 }
