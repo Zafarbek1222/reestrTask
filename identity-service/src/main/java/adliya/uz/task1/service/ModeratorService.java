@@ -64,14 +64,34 @@ public class ModeratorService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "User not found, ID: " + request.getUserId()));
 
+        User current = userService.getCurrentUser();
+        validatePromotionTarget(user, current);
+
         Set<Organization> orgs = resolveOrganizations(request.getOrganizationIds());
         checkScopeOrThrow(orgs);
 
         Role moderatorRole = roleService.getByName(MODERATOR_ROLE);
         user.setRole(moderatorRole);
+        user.getOrganizations().clear();
         user.getOrganizations().addAll(orgs);
 
         return userRepository.save(user);
+    }
+
+    @Transactional(readOnly = true)
+    public List<User> getPromotionCandidates() {
+        User current = userService.getCurrentUser();
+        Set<Long> myOrgIds = orgIdsOf(current);
+
+        return userRepository.findAll().stream()
+                .filter(user -> Boolean.TRUE.equals(user.getEnabled()))
+                .filter(user -> user.getRole() != null)
+                .filter(user -> !MODERATOR_ROLE.equals(user.getRole().getName()))
+                .filter(user -> !SUPER_ADMIN_ROLE.equals(user.getRole().getName()))
+                .filter(user -> isSuperAdmin(current)
+                        || (!"ROLE_ORG_ADMIN".equals(user.getRole().getName())
+                        && isEntirelyWithinScope(user, myOrgIds)))
+                .toList();
     }
 
     public List<User> getAll() {
@@ -141,6 +161,40 @@ public class ModeratorService {
             throw new AccessDeniedException(
                     "You can only manage moderators within your own organization(s)");
         }
+    }
+
+    private void validatePromotionTarget(User target, User current) {
+        if (target.getRole() == null) {
+            throw new IllegalStateException("User does not have an assigned role");
+        }
+        if (MODERATOR_ROLE.equals(target.getRole().getName())) {
+            throw new IllegalStateException("User is already a moderator");
+        }
+        if (SUPER_ADMIN_ROLE.equals(target.getRole().getName())) {
+            if (!isSuperAdmin(current)) {
+                throw new AccessDeniedException("Only SUPER_ADMIN can change another SUPER_ADMIN role");
+            }
+            if (Boolean.TRUE.equals(target.getEnabled())
+                    && userRepository.countByRole_NameAndEnabledTrue(SUPER_ADMIN_ROLE) <= 1) {
+                throw new IllegalStateException("The last enabled SUPER_ADMIN cannot be downgraded");
+            }
+        }
+        if (!isSuperAdmin(current)) {
+            if ("ROLE_ORG_ADMIN".equals(target.getRole().getName())) {
+                throw new AccessDeniedException("ORG_ADMIN cannot downgrade another ORG_ADMIN");
+            }
+            Set<Long> currentOrgIds = orgIdsOf(current);
+            boolean targetInScope = isEntirelyWithinScope(target, currentOrgIds);
+            if (!targetInScope) {
+                throw new AccessDeniedException("You can only promote users in your organization scope");
+            }
+        }
+    }
+
+    private boolean isEntirelyWithinScope(User user, Set<Long> allowedOrganizationIds) {
+        Set<Long> targetOrganizationIds = orgIdsOf(user);
+        return !targetOrganizationIds.isEmpty()
+                && allowedOrganizationIds.containsAll(targetOrganizationIds);
     }
 
     private Set<Long> orgIdsOf(User user) {

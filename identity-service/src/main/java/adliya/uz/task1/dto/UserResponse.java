@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -22,6 +23,7 @@ public class UserResponse {
     private String phone;
     private String role;
     private Boolean enabled;
+    private LocalDateTime createdAt;
     private Set<Long> organizationIds;
 
     public static UserResponse from(User user) {
@@ -33,6 +35,7 @@ public class UserResponse {
                 .phone(user.getPhone())
                 .role(user.getRole().getName())
                 .enabled(user.getEnabled())
+                .createdAt(user.getCreatedAt())
                 .organizationIds(user.getOrganizations().stream()
                         .map(Organization::getId)
                         .collect(Collectors.toSet()))

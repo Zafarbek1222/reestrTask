@@ -74,7 +74,7 @@ export interface StaffUser {
   lastName: string;
   email: string;
   phone: string | null;
-  role: RoleName;
+  role: string;
   enabled: boolean;
   organizationIds: number[];
 }
@@ -145,7 +145,11 @@ export interface RoleEntity {
 
 export interface CreateRoleRequest {
   name: string;
-  permissions: never[];
+}
+
+export interface AssignRoleRequest {
+  userId: number;
+  roleId: number;
 }
 
 export interface UpdateRolePermissionsRequest {
@@ -205,22 +209,21 @@ export interface LegacyUser {
   lastName: string;
   email: string;
   phone: string | null;
-  role: RoleName;
+  role: string;
   enabled: boolean;
   organizations: number[];
 }
 
-/** Shape returned by the raw JPA /api/user endpoints before frontend normalization. */
+/** Safe DTO returned by the compatibility /api/user endpoints. */
 export interface LegacyUserApi {
   id: number;
   firstName: string;
   lastName: string;
   email: string;
-  password?: string;
   phone: string | null;
-  role: RoleName | { name?: RoleName } | null;
+  role: string;
   enabled: boolean;
-  organizations: Array<number | { id?: number }>;
+  organizationIds: number[];
 }
 
 export interface CreateLegacyUserRequest {
@@ -229,9 +232,8 @@ export interface CreateLegacyUserRequest {
   email: string;
   password: string;
   phone: string;
-  role: RoleName;
-  enabled: boolean;
-  organizations: number[];
+  roleId: number;
+  organizationIds: number[];
 }
 
 /** Legacy update only changes these three fields. */

@@ -15,7 +15,7 @@ import {
   createOrgAdmin,
   deactivateOrgAdmin,
   getOrgAdmins,
-  getPromotableUsers,
+  getOrgAdminCandidates,
   promoteOrgAdmin,
   updateOrgAdmin } from
 '../../services/staffService';
@@ -45,7 +45,7 @@ export function OrgAdmins() {
   const { t } = useI18n();
   const admins = useAsync(getOrgAdmins, []);
   const organizations = useAsync(getOrganizations, []);
-  const promotable = useAsync(getPromotableUsers, []);
+  const promotable = useAsync(getOrgAdminCandidates, []);
 
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');

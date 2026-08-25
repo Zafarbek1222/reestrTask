@@ -1,5 +1,3 @@
-import type { RoleName } from '../types/api';
-
 export function formatDate(value: string | null | undefined): string {
   if (!value) return '—';
   const date = new Date(value);
@@ -7,7 +5,7 @@ export function formatDate(value: string | null | undefined): string {
   return new Intl.DateTimeFormat('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
 }
 
-export function roleLabel(role: RoleName): string {
+export function roleLabel(role: string): string {
   switch (role) {
     case 'ROLE_SUPER_ADMIN':
       return 'Super admin';
@@ -15,8 +13,10 @@ export function roleLabel(role: RoleName): string {
       return 'Tashkilot admini';
     case 'ROLE_MODERATOR':
       return 'Moderator';
-    default:
+    case 'ROLE_USER':
       return 'Foydalanuvchi';
+    default:
+      return role;
   }
 }
 

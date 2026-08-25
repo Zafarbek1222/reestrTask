@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { AlertTriangleIcon, PencilIcon, PlusIcon, SearchIcon, Trash2Icon } from 'lucide-react';
+import { AlertTriangleIcon, PencilIcon, PlusIcon, PowerOffIcon, SearchIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '../../components/layout/AdminLayout';
 import { Panel, PanelHeader } from '../../components/ui/Card';
@@ -12,13 +12,14 @@ import { Badge, StatusBadge } from '../../components/ui/Badge';
 import { useAsync } from '../../hooks/useAsync';
 import { useI18n } from '../../contexts/I18nContext';
 import { getOrganizations } from '../../services/organizationService';
+import { getRoles } from '../../services/roleService';
 import {
   createLegacyUser,
-  deleteLegacyUser,
+  deactivateLegacyUser,
   getLegacyUsers,
   updateLegacyUser } from
 '../../services/legacyUserService';
-import type { LegacyUser, RoleName } from '../../types/api';
+import type { LegacyUser } from '../../types/api';
 import { errorMessage, fieldErrorsOf } from '../../utils/errors';
 import { fullName, roleLabel } from '../../utils/format';
 
@@ -28,8 +29,7 @@ interface CreateForm {
   email: string;
   password: string;
   phone: string;
-  role: RoleName;
-  enabled: boolean;
+  roleId: string;
   organizations: number[];
 }
 
@@ -39,12 +39,9 @@ const emptyCreate: CreateForm = {
   email: '',
   password: '',
   phone: '',
-  role: 'ROLE_USER',
-  enabled: true,
+  roleId: '',
   organizations: []
 };
-
-const roleOptions: RoleName[] = ['ROLE_USER', 'ROLE_MODERATOR', 'ROLE_ORG_ADMIN', 'ROLE_SUPER_ADMIN'];
 
 /**
  * Legacy /api/user CRUD. GET /api/user/profile is broken and is NOT used here.
@@ -54,11 +51,12 @@ export function LegacyUsers() {
   const { t } = useI18n();
   const users = useAsync(getLegacyUsers, []);
   const organizations = useAsync(getOrganizations, []);
+  const roles = useAsync(getRoles, []);
 
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<LegacyUser | null>(null);
-  const [deleting, setDeleting] = useState<LegacyUser | null>(null);
+  const [deactivating, setDeactivating] = useState<LegacyUser | null>(null);
   const [createForm, setCreateForm] = useState<CreateForm>(emptyCreate);
   const [editForm, setEditForm] = useState({ firstName: '', lastName: '', email: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -86,6 +84,7 @@ export function LegacyUsers() {
     if (!createForm.lastName.trim()) next.lastName = t('validation.required');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createForm.email.trim())) next.email = t('validation.email');
     if (createForm.password.length < 8) next.password = t('validation.minPassword');
+    if (!createForm.roleId) next.roleId = t('validation.required');
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
@@ -97,9 +96,8 @@ export function LegacyUsers() {
         email: createForm.email.trim(),
         password: createForm.password,
         phone: createForm.phone.trim(),
-        role: createForm.role,
-        enabled: createForm.enabled,
-        organizations: createForm.organizations
+        roleId: Number(createForm.roleId),
+        organizationIds: createForm.organizations
       });
       toast.success(t('toast.created'));
       setCreateOpen(false);
@@ -138,13 +136,13 @@ export function LegacyUsers() {
     }
   };
 
-  const submitDelete = async () => {
-    if (!deleting) return;
+  const submitDeactivate = async () => {
+    if (!deactivating) return;
     setSaving(true);
     try {
-      await deleteLegacyUser(deleting.id);
-      toast.success(t('toast.deleted'));
-      setDeleting(null);
+      await deactivateLegacyUser(deactivating.id);
+      toast.success(t('toast.deactivated'));
+      setDeactivating(null);
       users.reload();
     } catch (error) {
       toast.error(errorMessage(error));
@@ -199,8 +197,8 @@ export function LegacyUsers() {
         
             {t('action.edit')}
           </Button>
-          <Button size="sm" variant="danger" onClick={() => setDeleting(row)} icon={<Trash2Icon className="h-3.5 w-3.5" />}>
-            {t('action.delete')}
+          <Button size="sm" variant="danger" onClick={() => setDeactivating(row)} icon={<PowerOffIcon className="h-3.5 w-3.5" />}>
+            {t('action.deactivate')}
           </Button>
         </div>
 
@@ -336,17 +334,18 @@ export function LegacyUsers() {
 
             }
           </Field>
-          <Field label={t('field.role')} error={errors.role}>
+          <Field label={t('field.role')} error={errors.roleId} required>
             {({ id, invalid }) =>
             <Select
               id={id}
-              value={createForm.role}
+              value={createForm.roleId}
               invalid={invalid}
-              onChange={(event) => setCreateForm({ ...createForm, role: event.target.value as RoleName })}>
+              onChange={(event) => setCreateForm({ ...createForm, roleId: event.target.value })}>
               
-                {roleOptions.map((option) =>
-              <option key={option} value={option}>
-                    {roleLabel(option)}
+                <option value="">{t('field.role')}</option>
+                {(roles.data ?? []).map((role) =>
+              <option key={role.id} value={role.id}>
+                    {roleLabel(role.name)}
                   </option>
               )}
               </Select>
@@ -360,15 +359,6 @@ export function LegacyUsers() {
             onChange={(values) => setCreateForm({ ...createForm, organizations: values })}
             columns={2} />
           
-          <label className="flex items-center gap-2.5 text-sm text-navy-700 sm:col-span-2">
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border-navy-300 text-teal-600 focus:ring-teal-500"
-              checked={createForm.enabled}
-              onChange={(event) => setCreateForm({ ...createForm, enabled: event.target.checked })} />
-            
-            {t('field.enabled')}
-          </label>
         </div>
       </Modal>
 
@@ -425,14 +415,14 @@ export function LegacyUsers() {
       </Modal>
 
       <ConfirmModal
-        open={Boolean(deleting)}
-        title={t('action.delete')}
-        message={`${deleting ? fullName(deleting) : ''} — ${t('legacy.deleteConfirm')}`}
-        confirmLabel={t('action.delete')}
+        open={Boolean(deactivating)}
+        title={t('action.deactivate')}
+        message={`${deactivating ? fullName(deactivating) : ''} — ${t('staff.deactivateConfirm')}`}
+        confirmLabel={t('action.deactivate')}
         cancelLabel={t('action.cancel')}
         loading={saving}
-        onConfirm={submitDelete}
-        onClose={() => setDeleting(null)} />
+        onConfirm={submitDeactivate}
+        onClose={() => setDeactivating(null)} />
       
     </div>);
 

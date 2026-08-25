@@ -2,29 +2,21 @@ import type {
   CreateLegacyUserRequest,
   LegacyUser,
   LegacyUserApi,
-  RoleEntity,
   UpdateLegacyUserRequest
 } from '../types/api';
-import { ApiError, apiRequest } from './http';
+import { apiRequest } from './http';
 
-/**
- * The backend exposes these endpoints as raw JPA entities. The frontend strips
- * password data and converts nested role/organization objects to safe values.
- * GET /api/user/profile is intentionally not implemented.
- */
+/** Maps the compatibility user DTO to the existing page model. */
 function normalize(user: LegacyUserApi): LegacyUser {
-  const role = typeof user.role === 'string' ? user.role : user.role?.name ?? 'ROLE_USER';
   return {
     id: user.id,
     firstName: user.firstName,
     lastName: user.lastName,
     email: user.email,
     phone: user.phone ?? null,
-    role,
+    role: user.role,
     enabled: user.enabled,
-    organizations: (user.organizations ?? [])
-      .map((organization) => typeof organization === 'number' ? organization : organization.id)
-      .filter((id): id is number => typeof id === 'number')
+    organizations: user.organizationIds ?? []
   };
 }
 
@@ -37,15 +29,8 @@ export async function getLegacyUser(id: number): Promise<LegacyUser> {
   return normalize(await apiRequest<LegacyUserApi>(`/api/user/${id}`));
 }
 
-/**
- * The raw endpoint needs Role and Organization entity references, not role and
- * organization ID primitives. Resolve the role first and send ID references.
- */
+/** Sends the backend DTO directly; the server resolves and validates every ID. */
 export async function createLegacyUser(payload: CreateLegacyUserRequest): Promise<LegacyUser> {
-  const roles = await apiRequest<RoleEntity[]>('/api/roles');
-  const selectedRole = roles.find((role) => role.name === payload.role);
-  if (!selectedRole) throw new ApiError(400, `Role not found: ${payload.role}`);
-
   const created = await apiRequest<LegacyUserApi>('/api/user', {
     method: 'POST',
     body: {
@@ -54,9 +39,8 @@ export async function createLegacyUser(payload: CreateLegacyUserRequest): Promis
       email: payload.email,
       password: payload.password,
       phone: payload.phone || null,
-      role: { id: selectedRole.id },
-      enabled: payload.enabled,
-      organizations: payload.organizations.map((id) => ({ id }))
+      roleId: payload.roleId,
+      organizationIds: payload.organizationIds
     }
   });
   return normalize(created);
@@ -67,6 +51,7 @@ export async function updateLegacyUser(id: number, payload: UpdateLegacyUserRequ
   return normalize(await apiRequest<LegacyUserApi>(`/api/user/${id}`, { method: 'PUT', body: payload }));
 }
 
-export function deleteLegacyUser(id: number): Promise<void> {
+/** The compatibility DELETE route performs a soft deactivation. */
+export function deactivateLegacyUser(id: number): Promise<void> {
   return apiRequest<void>(`/api/user/${id}`, { method: 'DELETE' });
 }

@@ -33,6 +33,15 @@ public class ModeratorController {
         return ResponseEntity.ok(UserResponse.from(user));
     }
 
+    @GetMapping("/candidates")
+    @PreAuthorize("hasAuthority('MODERATORS_CREATE')")
+    public ResponseEntity<List<UserResponse>> getPromotionCandidates() {
+        List<UserResponse> candidates = moderatorService.getPromotionCandidates().stream()
+                .map(UserResponse::from)
+                .toList();
+        return ResponseEntity.ok(candidates);
+    }
+
     @GetMapping
     @PreAuthorize("hasAuthority('MODERATORS_VIEW')")
     public ResponseEntity<List<UserResponse>> getAll() {

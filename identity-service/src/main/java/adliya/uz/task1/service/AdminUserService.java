@@ -20,6 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminUserService {
 
+    private static final String SUPER_ADMIN_ROLE = "ROLE_SUPER_ADMIN";
     private static final String ORG_ADMIN_ROLE = "ROLE_ORG_ADMIN";
 
     private final UserRepository userRepository;
@@ -57,6 +58,8 @@ public class AdminUserService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "User not found, ID: " + request.getUserId()));
 
+        protectLastSuperAdmin(user);
+
         Organization org = organizationService.getById(request.getOrganizationId());
         Role orgAdminRole = roleService.getByName(ORG_ADMIN_ROLE);
 
@@ -64,6 +67,16 @@ public class AdminUserService {
         user.getOrganizations().add(org);
 
         return userRepository.save(user);
+    }
+
+    @Transactional(readOnly = true)
+    public List<User> getPromotionCandidates() {
+        return userRepository.findAll().stream()
+                .filter(user -> Boolean.TRUE.equals(user.getEnabled()))
+                .filter(user -> user.getRole() != null)
+                .filter(user -> !SUPER_ADMIN_ROLE.equals(user.getRole().getName()))
+                .filter(user -> !ORG_ADMIN_ROLE.equals(user.getRole().getName()))
+                .toList();
     }
 
     public List<User> getAllOrgAdmins() {
@@ -107,6 +120,15 @@ public class AdminUserService {
         if (!expectedRole.equals(user.getRole().getName())) {
             throw new ResourceNotFoundException(
                     "User with ID " + user.getId() + " is not a " + expectedRole);
+        }
+    }
+
+    private void protectLastSuperAdmin(User user) {
+        if (Boolean.TRUE.equals(user.getEnabled())
+                && user.getRole() != null
+                && SUPER_ADMIN_ROLE.equals(user.getRole().getName())
+                && userRepository.countByRole_NameAndEnabledTrue(SUPER_ADMIN_ROLE) <= 1) {
+            throw new IllegalStateException("The last enabled SUPER_ADMIN cannot be downgraded");
         }
     }
 }

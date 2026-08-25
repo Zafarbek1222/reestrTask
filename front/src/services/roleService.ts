@@ -1,4 +1,5 @@
 import type {
+  AssignRoleRequest,
   CreatePermissionRequest,
   CreateRoleRequest,
   Permission,
@@ -33,7 +34,8 @@ export function deleteRole(id: number): Promise<void> {
 }
 
 export function assignRole(userId: number, roleId: number): Promise<string> {
-  return apiRequest<string>('/api/roles/assign', { method: 'POST', query: { userId, roleId } });
+  const body: AssignRoleRequest = { userId, roleId };
+  return apiRequest<string>('/api/roles/assign', { method: 'POST', body });
 }
 
 /** Replaces the entire permission set. Send [] to clear every permission. */

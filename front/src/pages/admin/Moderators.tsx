@@ -17,7 +17,7 @@ import {
   createModerator,
   deactivateModerator,
   getModerators,
-  getPromotableUsers,
+  getModeratorCandidates,
   promoteModerator,
   updateModerator } from
 '../../services/staffService';
@@ -48,7 +48,7 @@ export function Moderators() {
   const { user, isOrgAdmin } = useAuth();
   const moderators = useAsync(getModerators, []);
   const organizations = useAsync(getOrganizations, []);
-  const promotable = useAsync(getPromotableUsers, []);
+  const promotable = useAsync(getModeratorCandidates, []);
 
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');

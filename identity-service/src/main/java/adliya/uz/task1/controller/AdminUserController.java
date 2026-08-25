@@ -33,6 +33,15 @@ public class AdminUserController {
         return ResponseEntity.ok(UserResponse.from(user));
     }
 
+    @GetMapping("/candidates")
+    @PreAuthorize("hasAuthority('ORG_ADMINS_CREATE')")
+    public ResponseEntity<List<UserResponse>> getPromotionCandidates() {
+        List<UserResponse> candidates = adminUserService.getPromotionCandidates().stream()
+                .map(UserResponse::from)
+                .toList();
+        return ResponseEntity.ok(candidates);
+    }
+
     @GetMapping
     @PreAuthorize("hasAuthority('ORG_ADMINS_VIEW')")
     public ResponseEntity<List<UserResponse>> getAll() {

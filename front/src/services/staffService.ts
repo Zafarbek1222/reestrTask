@@ -4,7 +4,6 @@ import type {
   LegacyUserApi,
   PromoteModeratorRequest,
   PromoteOrgAdminRequest,
-  RoleName,
   StaffUser,
   UpdateModeratorRequest,
   UpdateOrgAdminRequest
@@ -13,17 +12,6 @@ import { apiRequest } from './http';
 
 /* The only endpoint that lists arbitrary users is the legacy /api/user API.
  * Normalize its entity-shaped response before it reaches staff-management UI. */
-function roleName(value: LegacyUserApi['role']): RoleName {
-  if (typeof value === 'string') return value;
-  return value?.name ?? 'ROLE_USER';
-}
-
-function organizationIds(value: LegacyUserApi['organizations']): number[] {
-  return value
-    .map((organization) => typeof organization === 'number' ? organization : organization.id)
-    .filter((id): id is number => typeof id === 'number');
-}
-
 function normalizeUser(user: LegacyUserApi): StaffUser {
   return {
     id: user.id,
@@ -31,9 +19,9 @@ function normalizeUser(user: LegacyUserApi): StaffUser {
     lastName: user.lastName,
     email: user.email,
     phone: user.phone ?? null,
-    role: roleName(user.role),
+    role: user.role,
     enabled: user.enabled,
-    organizationIds: organizationIds(user.organizations ?? [])
+    organizationIds: user.organizationIds ?? []
   };
 }
 
@@ -85,11 +73,16 @@ export function deactivateModerator(id: number): Promise<void> {
   return apiRequest<void>(`/api/admin/moderators/${id}`, { method: 'DELETE' });
 }
 
-/**
- * There is no dedicated candidate endpoint in the backend. It is intentionally
- * implemented through GET /api/user and normalized to the public UI shape.
- */
-export async function getPromotableUsers(): Promise<StaffUser[]> {
+/** SUPER_ADMIN-only compatibility list used for arbitrary role assignment. */
+export async function getRoleAssignmentCandidates(): Promise<StaffUser[]> {
   const users = await apiRequest<LegacyUserApi[]>('/api/user');
   return users.map(normalizeUser);
+}
+
+export function getModeratorCandidates(): Promise<StaffUser[]> {
+  return apiRequest<StaffUser[]>('/api/admin/moderators/candidates');
+}
+
+export function getOrgAdminCandidates(): Promise<StaffUser[]> {
+  return apiRequest<StaffUser[]>('/api/admin/org-admins/candidates');
 }

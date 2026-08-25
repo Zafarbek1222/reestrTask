@@ -201,6 +201,13 @@
       "access": "Нужны permissions ORG_ADMINS_VIEW/CREATE/EDIT/DEACTIVATE соответственно",
       "requests": [
         {
+          "action": "Загрузить кандидатов на повышение до org admin",
+          "method": "GET",
+          "url": "http://localhost:8082/api/admin/org-admins/candidates",
+          "accessOverride": "ORG_ADMINS_CREATE",
+          "success": { "status": 200, "body": "UserResponse[] без password" }
+        },
+        {
           "action": "Загрузить org admins",
           "method": "GET",
           "url": "http://localhost:8082/api/admin/org-admins",
@@ -247,6 +254,13 @@
       "access": "Нужны permissions MODERATORS_VIEW/CREATE/EDIT/DEACTIVATE. ORG_ADMIN может работать только в своих организациях.",
       "requests": [
         {
+          "action": "Загрузить кандидатов на повышение до moderator в доступной области организаций",
+          "method": "GET",
+          "url": "http://localhost:8082/api/admin/moderators/candidates",
+          "accessOverride": "MODERATORS_CREATE",
+          "success": { "status": 200, "body": "UserResponse[] без password" }
+        },
+        {
           "action": "Загрузить доступных moderators",
           "method": "GET",
           "url": "http://localhost:8082/api/admin/moderators",
@@ -290,7 +304,7 @@
     {
       "page": "Роли и permissions",
       "frontendRoute": "/admin/roles",
-      "access": "В текущем коде достаточно authenticated, хотя для production это должно быть ограничено SUPER_ADMIN.",
+      "access": "Просмотр требует ROLES_VIEW; создание, удаление и назначение ролей требуют ROLE_SUPER_ADMIN; управление permissions доступно ROLE_SUPER_ADMIN или ROLES_MANAGE_PERMISSIONS.",
       "requests": [
         {
           "action": "Загрузить роли",
@@ -309,9 +323,9 @@
           "action": "Создать роль",
           "method": "POST",
           "url": "http://localhost:8082/api/roles",
-          "accepts": { "name": "string; backend сделает UPPERCASE и добавит ROLE_", "permissions": "PermissionEntity[], можно []" },
-          "requestExample": { "name": "manager", "permissions": [] },
-          "success": { "status": 200, "body": "{ id, name: 'ROLE_MANAGER', permissions: [] }" }
+          "accepts": { "name": "string; backend нормализует регистр, пробелы/дефисы и добавит ROLE_" },
+          "requestExample": { "name": "manager" },
+          "success": { "status": 201, "body": "{ id, name: 'ROLE_MANAGER', permissions: [] }" }
         },
         {
           "action": "Заменить permissions роли после выбора чекбоксов",
@@ -325,16 +339,18 @@
         {
           "action": "Назначить роль пользователю",
           "method": "POST",
-          "urlTemplate": "http://localhost:8082/api/roles/assign?userId={userId}&roleId={roleId}",
-          "queryParams": { "userId": "number, обязательное", "roleId": "number, обязательное" },
-          "success": { "status": 200, "body": "string (сообщение на узбекском)" }
+          "url": "http://localhost:8082/api/roles/assign",
+          "accepts": { "userId": "number, обязательное", "roleId": "number, обязательное" },
+          "requestExample": { "userId": 12, "roleId": 3 },
+          "success": { "status": 200, "body": "string" }
         },
         {
           "action": "Удалить роль",
           "method": "DELETE",
           "urlTemplate": "http://localhost:8082/api/roles/{id}",
           "pathParams": { "id": "number" },
-          "success": { "status": 200, "body": "Rol o'chirildi!" }
+          "success": { "status": 200, "body": "Role deleted successfully." },
+          "notes": "Системные и назначенные пользователям роли удалить нельзя."
         }
       ]
     },
@@ -404,15 +420,11 @@
   "notRecommendedForNewFrontend": [
     {
       "urlPrefix": "http://localhost:8082/api/user",
-      "reason": "Legacy endpoints отдают raw JPA User, могут раскрыть password и вызвать циклическую JSON-сериализацию. Использовать auth/me, org-admin и moderator endpoints вместо них."
+      "reason": "Compatibility API доступен только ROLE_SUPER_ADMIN и использует безопасные DTO без password. Для новых staff-сценариев использовать scoped org-admin/moderator endpoints."
     },
     {
       "url": "http://localhost:8082/api/admin/dashboard",
       "reason": "Возвращает только строку Hello ADMIN, не предоставляет реальные dashboard данные."
-    },
-    {
-      "urlPrefix": "http://localhost:8082/api/roles",
-      "reason": "Backend сейчас разрешает эти операции любому авторизованному пользователю; UI должен скрыть их от не-SUPER_ADMIN, но проверку обязательно нужно добавить на backend перед production."
     }
   ],
   "backendErrorShape": {

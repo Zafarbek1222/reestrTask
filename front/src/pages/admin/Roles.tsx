@@ -20,7 +20,7 @@ import {
   getRoles,
   updateRolePermissions } from
 '../../services/roleService';
-import { getOrgAdmins, getModerators, getPromotableUsers } from '../../services/staffService';
+import { getOrgAdmins, getModerators, getRoleAssignmentCandidates } from '../../services/staffService';
 import type { Permission, RoleEntity } from '../../types/api';
 import { errorMessage, fieldErrorsOf } from '../../utils/errors';
 import { fullName } from '../../utils/format';
@@ -31,7 +31,7 @@ export function Roles() {
   const permissions = useAsync(getPermissions, []);
   const users = useAsync(
     async () => {
-      const [admins, moderators, plain] = await Promise.all([getOrgAdmins(), getModerators(), getPromotableUsers()]);
+      const [admins, moderators, plain] = await Promise.all([getOrgAdmins(), getModerators(), getRoleAssignmentCandidates()]);
       return [...admins, ...moderators, ...plain];
     },
     []
@@ -62,7 +62,7 @@ export function Roles() {
     }
     setSaving(true);
     try {
-      await createRole({ name: roleName.trim(), permissions: [] });
+      await createRole({ name: roleName.trim() });
       toast.success(t('toast.created'));
       setCreateOpen(false);
       setRoleName('');
