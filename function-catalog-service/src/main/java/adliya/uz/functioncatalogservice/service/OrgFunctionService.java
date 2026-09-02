@@ -49,9 +49,7 @@ public class OrgFunctionService {
                 .requirements(request.requirements())
                 .category(request.category())
                 .build();
-        function = orgFunctionRepository.save(function);
-        translationService.translateChangedFields(function, true, request.description() != null);
-        return function;
+        return orgFunctionRepository.save(function);
     }
 
     @Transactional
@@ -79,9 +77,8 @@ public class OrgFunctionService {
             function.setCategory(request.category());
         }
 
-        function = orgFunctionRepository.save(function);
-        translationService.translateChangedFields(function, nameChanged, descriptionChanged);
-        return function;
+        translationService.invalidateMachineTranslations(function, nameChanged, descriptionChanged);
+        return orgFunctionRepository.save(function);
     }
 
     @Transactional
@@ -90,10 +87,6 @@ public class OrgFunctionService {
         requireOrganizationAccess(function.getOrganizationId());
         function.setRequirements(requirements);
         return orgFunctionRepository.save(function);
-    }
-
-    public void translateExistingForLanguage(String languageCode) {
-        translationService.translateExistingForLanguage(languageCode);
     }
 
     private void requireOrganizationAccess(Long organizationId) {

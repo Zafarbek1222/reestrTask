@@ -16,6 +16,7 @@ export function useAsync<T>(loader: () => Promise<T>, deps: unknown[] = []): Asy
 } {
   const [state, setState] = useState<AsyncState<T>>({ data: null, loading: true, error: null });
   const mounted = useRef(true);
+  const requestId = useRef(0);
   const [tick, setTick] = useState(0);
   const loaderRef = useRef(loader);
   loaderRef.current = loader;
@@ -28,15 +29,23 @@ export function useAsync<T>(loader: () => Promise<T>, deps: unknown[] = []): Asy
   }, []);
 
   useEffect(() => {
+    const currentRequest = ++requestId.current;
     setState((prev) => ({ ...prev, loading: true, error: null }));
     loaderRef.
     current().
     then((data) => {
-      if (mounted.current) setState({ data, loading: false, error: null });
+      if (mounted.current && currentRequest === requestId.current) {
+        setState({ data, loading: false, error: null });
+      }
     }).
     catch((error: unknown) => {
-      if (mounted.current) setState({ data: null, loading: false, error });
+      if (mounted.current && currentRequest === requestId.current) {
+        setState({ data: null, loading: false, error });
+      }
     });
+    return () => {
+      if (currentRequest === requestId.current) requestId.current += 1;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tick, ...deps]);
 

@@ -1,20 +1,24 @@
-export function formatDate(value: string | null | undefined): string {
+export function formatDate(value: string | null | undefined, locale = 'uz-UZ'): string {
   if (!value) return '—';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
-  return new Intl.DateTimeFormat('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+  try {
+    return new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+  } catch {
+    return new Intl.DateTimeFormat('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+  }
 }
 
-export function roleLabel(role: string): string {
+export function roleLabel(role: string, t?: (key: string, fallback?: string) => string): string {
   switch (role) {
     case 'ROLE_SUPER_ADMIN':
-      return 'Super admin';
+      return t?.('role.superAdmin', 'Super admin') ?? 'Super admin';
     case 'ROLE_ORG_ADMIN':
-      return 'Tashkilot admini';
+      return t?.('role.orgAdmin', 'Tashkilot admini') ?? 'Tashkilot admini';
     case 'ROLE_MODERATOR':
-      return 'Moderator';
+      return t?.('role.moderator', 'Moderator') ?? 'Moderator';
     case 'ROLE_USER':
-      return 'Foydalanuvchi';
+      return t?.('role.user', 'Foydalanuvchi') ?? 'Foydalanuvchi';
     default:
       return role;
   }

@@ -1,36 +1,11 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { AuthUser, RoleName } from '../types/api';
 import * as authService from '../services/authService';
 import { onUnauthorized } from '../services/http';
+import { AuthContext, type AuthValue } from './auth';
 
-interface AuthValue {
-  user: AuthUser | null;
-  initializing: boolean;
-  signIn: (email: string, password: string) => Promise<AuthUser>;
-  signOut: () => Promise<void>;
-  refreshUser: () => Promise<void>;
-  hasRole: (...roles: RoleName[]) => boolean;
-  isSuperAdmin: boolean;
-  isOrgAdmin: boolean;
-  isModerator: boolean;
-}
-
-const AuthContext = createContext<AuthValue | null>(null);
-
-/** Landing route per role. */
-export function homeRouteForRole(role: RoleName): string {
-  switch (role) {
-    case 'ROLE_SUPER_ADMIN':
-    case 'ROLE_ORG_ADMIN':
-    case 'ROLE_MODERATOR':
-      return '/admin';
-    default:
-      return '/';
-  }
-}
-
-export function AuthProvider({ children }: {children: React.ReactNode;}) {
+export function AuthProvider({ children }: {children: ReactNode;}) {
   const navigate = useNavigate();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [initializing, setInitializing] = useState(true);
@@ -91,10 +66,4 @@ export function AuthProvider({ children }: {children: React.ReactNode;}) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth(): AuthValue {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used inside AuthProvider');
-  return context;
 }

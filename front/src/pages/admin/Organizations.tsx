@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { PencilIcon, PlusIcon, PowerOffIcon, SearchIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '../../components/layout/AdminLayout';
@@ -9,8 +9,8 @@ import { ConfirmModal, Modal } from '../../components/ui/Modal';
 import { DataTable, type Column } from '../../components/ui/DataTable';
 import { StatusBadge } from '../../components/ui/Badge';
 import { useAsync } from '../../hooks/useAsync';
-import { useAuth } from '../../contexts/AuthContext';
-import { useI18n } from '../../contexts/I18nContext';
+import { useAuth } from '../../contexts/auth';
+import { useI18n } from '../../contexts/i18n';
 import {
   createOrganization,
   deactivateOrganization,
@@ -29,7 +29,7 @@ interface FormState {
 const emptyForm: FormState = { name: '', description: '' };
 
 export function Organizations() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { isSuperAdmin } = useAuth();
   const organizations = useAsync(getOrganizations, []);
 
@@ -125,7 +125,13 @@ export function Organizations() {
   };
 
   const columns: Column<Organization>[] = [
-  { key: 'id', header: t('field.id'), render: (row) => <span className="text-navy-400">#{row.id}</span> },
+  {
+    key: 'id',
+    header: t('field.id'),
+    className: 'hidden lg:table-cell',
+    headerClassName: 'hidden lg:table-cell',
+    render: (row) => <span className="text-navy-400">#{row.id}</span>
+  },
   {
     key: 'name',
     header: t('field.name'),
@@ -134,13 +140,17 @@ export function Organizations() {
   {
     key: 'description',
     header: t('field.description'),
+    className: 'hidden md:table-cell',
+    headerClassName: 'hidden md:table-cell',
     render: (row) => <span className="text-navy-500">{truncate(row.description, 90)}</span>
   },
   { key: 'enabled', header: t('field.enabled'), render: (row) => <StatusBadge enabled={row.enabled} /> },
   {
     key: 'createdAt',
     header: t('field.createdAt'),
-    render: (row) => <span className="text-navy-500">{formatDate(row.createdAt)}</span>
+    className: 'hidden xl:table-cell',
+    headerClassName: 'hidden xl:table-cell',
+    render: (row) => <span className="text-navy-500">{formatDate(row.createdAt, locale)}</span>
   },
   ...(isSuperAdmin ?
   [
@@ -151,17 +161,27 @@ export function Organizations() {
     headerClassName: 'text-right',
     render: (row: Organization) =>
     <div className="flex justify-end gap-1.5">
-                <Button size="sm" variant="outline" onClick={() => openEdit(row)} icon={<PencilIcon className="h-3.5 w-3.5" />}>
-                  {t('action.edit')}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  aria-label={t('action.edit')}
+                  title={t('action.edit')}
+                  className="px-2 xl:px-3"
+                  onClick={() => openEdit(row)}
+                  icon={<PencilIcon className="h-3.5 w-3.5" />}>
+                  <span className="hidden xl:inline">{t('action.edit')}</span>
                 </Button>
                 {row.enabled &&
       <Button
         size="sm"
         variant="danger"
+        aria-label={t('action.deactivate')}
+        title={t('action.deactivate')}
+        className="px-2 xl:px-3"
         onClick={() => setDeactivating(row)}
         icon={<PowerOffIcon className="h-3.5 w-3.5" />}>
         
-                    {t('action.deactivate')}
+                    <span className="hidden xl:inline">{t('action.deactivate')}</span>
                   </Button>
       }
               </div>
@@ -178,6 +198,7 @@ export function Organizations() {
       <TextInput
         id={id}
         value={form.name}
+        maxLength={150}
         invalid={invalid}
         aria-describedby={describedBy}
         onChange={(event) => setForm({ ...form, name: event.target.value })}
@@ -191,6 +212,7 @@ export function Organizations() {
         id={id}
         rows={4}
         value={form.description}
+        maxLength={500}
         invalid={invalid}
         aria-describedby={describedBy}
         onChange={(event) => setForm({ ...form, description: event.target.value })} />
@@ -214,11 +236,11 @@ export function Organizations() {
         } />
       
 
-      <Panel>
+      <Panel className="overflow-hidden [&_table]:!min-w-0 [&_td]:!px-3 [&_th]:!px-3 sm:[&_td]:!px-6 sm:[&_th]:!px-6">
         <PanelHeader
           title={`${rows.length} ${t('home.resultsCount')}`}
           actions={
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:flex sm:w-auto">
               <label className="relative">
                 <span className="sr-only">{t('action.search')}</span>
                 <SearchIcon
@@ -229,10 +251,14 @@ export function Organizations() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder={t('action.search')}
-                className="h-10 w-full pl-9 sm:w-56" />
+                className="h-11 w-full pl-9 sm:w-56" />
               
               </label>
-              <Select value={status} onChange={(event) => setStatus(event.target.value)} className="h-10 sm:w-40">
+              <Select
+                value={status}
+                aria-label={t('field.status')}
+                onChange={(event) => setStatus(event.target.value)}
+                className="h-11 sm:w-40">
                 <option value="">{t('status.all')}</option>
                 <option value="active">{t('status.active')}</option>
                 <option value="inactive">{t('status.inactive')}</option>
@@ -264,6 +290,7 @@ export function Organizations() {
         open={createOpen}
         title={t('orgs.create')}
         onClose={() => setCreateOpen(false)}
+        closeDisabled={saving}
         footer={
         <>
             <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={saving}>
@@ -283,6 +310,7 @@ export function Organizations() {
         title={t('orgs.edit')}
         description={editing ? `#${editing.id}` : undefined}
         onClose={() => setEditing(null)}
+        closeDisabled={saving}
         footer={
         <>
             <Button variant="outline" onClick={() => setEditing(null)} disabled={saving}>

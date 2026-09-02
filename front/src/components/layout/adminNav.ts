@@ -3,9 +3,10 @@ import type { RoleName } from '../../types/api';
 export interface AdminNavItem {
   to: string;
   labelKey: string;
-  icon: 'dashboard' | 'building' | 'shield' | 'users' | 'key' | 'globe' | 'legacy' | 'lock' | 'catalog';
+  icon: 'dashboard' | 'building' | 'shield' | 'users' | 'key' | 'globe' | 'legacy' | 'lock';
   roles: RoleName[];
   end?: boolean;
+  dividerBefore?: boolean;
 }
 
 /**
@@ -27,7 +28,13 @@ export const adminNav: AdminNavItem[] = [
   icon: 'building',
   roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_MODERATOR']
 },
-{ to: '/admin/org-admins', labelKey: 'nav.orgAdmins', icon: 'shield', roles: ['ROLE_SUPER_ADMIN'] },
+{
+  to: '/admin/org-admins',
+  labelKey: 'nav.orgAdmins',
+  icon: 'shield',
+  roles: ['ROLE_SUPER_ADMIN'],
+  dividerBefore: true
+},
 {
   to: '/admin/moderators',
   labelKey: 'nav.moderators',
@@ -41,7 +48,8 @@ export const adminNav: AdminNavItem[] = [
   to: '/settings/security',
   labelKey: 'nav.security',
   icon: 'lock',
-  roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_MODERATOR']
+  roles: ['ROLE_SUPER_ADMIN', 'ROLE_ORG_ADMIN', 'ROLE_MODERATOR'],
+  dividerBefore: true
 }];
 
 

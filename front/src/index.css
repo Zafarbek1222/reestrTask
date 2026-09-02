@@ -14,26 +14,98 @@ body,
   width: 100%;
   min-height: 100%;
 }
-body {
-  background-color: #f4f6f9;
-  color: #152845;
-  font-family: 'Inter', system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
+
 :root {
-  --ring: #1fa5a4;
+  color-scheme: light;
+  --color-canvas: 246 248 251;
+  --color-surface: 255 255 255;
+  --color-surface-subtle: 241 245 249;
+  --color-surface-raised: 255 255 255;
+  --color-surface-inverse: 13 27 48;
+  --color-content: 30 53 87;
+  --color-content-strong: 13 27 48;
+  --color-content-muted: 72 94 124;
+  --color-content-subtle: 82 106 137;
+  --color-content-inverse: 255 255 255;
+  --color-line: 220 228 237;
+  --color-line-strong: 190 202 216;
+  --color-brand: 21 40 69;
+  --color-brand-hover: 13 27 48;
+  --color-brand-pressed: 7 15 28;
+  --color-brand-subtle: 239 243 248;
+  --color-accent: 15 127 125;
+  --color-accent-hover: 11 109 107;
+  --color-accent-pressed: 9 90 89;
+  --color-accent-subtle: 232 247 245;
+  --color-positive: 20 122 75;
+  --color-warning: 146 91 11;
+  --color-danger: 180 35 24;
+  --color-info: 23 107 147;
+  --color-focus: 31 165 164;
 }
+
+html {
+  scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  background-color: rgb(var(--color-canvas));
+  color: rgb(var(--color-content));
+  font-family: 'Inter', system-ui, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a,
+select,
+input,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
 *:focus-visible {
-  outline: 2px solid var(--ring);
+  outline: 3px solid rgb(var(--color-focus));
   outline-offset: 2px;
 }
+
+::selection {
+  background: rgb(var(--color-accent) / 0.18);
+  color: rgb(var(--color-content-strong));
+}
+
 .pattern-band {
   background-image: linear-gradient(
     90deg,
-    #1eaf5b 0 12.5%,
-    #ffffff 12.5% 25%,
-    #1a8fd1 25% 37.5%,
-    #1fa5a4 37.5% 50%
+    #1eaf5b 0 25%,
+    #ffffff 25% 50%,
+    #1a8fd1 50% 75%,
+    #1fa5a4 75% 100%
   );
-  background-size: 64px 100%;
+  background-size: 72px 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

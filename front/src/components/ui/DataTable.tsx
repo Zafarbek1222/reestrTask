@@ -1,4 +1,4 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 import { twMerge } from 'tailwind-merge';
 import { SkeletonRows } from './Skeleton';
 import { EmptyState, ErrorState } from './States';
@@ -6,7 +6,7 @@ import { EmptyState, ErrorState } from './States';
 export interface Column<T> {
   key: string;
   header: string;
-  render: (row: T) => React.ReactNode;
+  render: (row: T) => ReactNode;
   className?: string;
   headerClassName?: string;
 }
@@ -20,7 +20,7 @@ interface DataTableProps<T> {
   onRetry?: () => void;
   emptyTitle: string;
   emptyDescription?: string;
-  emptyAction?: React.ReactNode;
+  emptyAction?: ReactNode;
   caption?: string;
 }
 
@@ -41,38 +41,69 @@ export function DataTable<T>({
   if (rows.length === 0)
   return <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />;
 
+  const mobileColumns = columns.filter(
+    (column) => !column.className?.split(/\s+/).includes('hidden')
+  );
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[720px] border-collapse text-left text-sm">
-        {caption && <caption className="sr-only">{caption}</caption>}
-        <thead>
-          <tr className="border-b border-navy-100 bg-navy-50/60">
-            {columns.map((column) =>
-            <th
-              key={column.key}
-              scope="col"
-              className={twMerge(
-                'px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-navy-500 sm:px-6',
-                column.headerClassName
-              )}>
-              
+    <div className="w-full">
+      <div className="hidden overflow-hidden lg:block">
+        <table className="w-full border-collapse text-left text-sm">
+          {caption && <caption className="sr-only">{caption}</caption>}
+          <thead>
+            <tr className="border-b border-line bg-surface-subtle">
+              {columns.map((column) =>
+              <th
+                key={column.key}
+                scope="col"
+                className={twMerge(
+                  'px-4 py-3.5 text-xs font-bold uppercase tracking-[0.06em] text-content-muted first:pl-6 last:pr-6',
+                  column.headerClassName
+                )}>
                 {column.header}
               </th>
-            )}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-navy-100">
-          {rows.map((row) =>
-          <tr key={rowKey(row)} className="transition-colors hover:bg-navy-50/40">
-              {columns.map((column) =>
-            <td key={column.key} className={twMerge('px-4 py-3.5 align-middle text-navy-700 sm:px-6', column.className)}>
-                  {column.render(row)}
-                </td>
-            )}
+              )}
             </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {rows.map((row) =>
+            <tr key={rowKey(row)} className="transition-colors duration-fast hover:bg-brand-subtle/60">
+                {columns.map((column) =>
+              <td
+                key={column.key}
+                className={twMerge(
+                  'break-words px-4 py-4 align-middle text-content first:pl-6 last:pr-6',
+                  column.className
+                )}>
+                    {column.render(row)}
+                  </td>
+              )}
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div
+        className="divide-y divide-line lg:hidden"
+        role={caption ? 'region' : undefined}
+        aria-label={caption}>
+        {caption && <h2 className="sr-only">{caption}</h2>}
+        {rows.map((row) =>
+        <dl key={rowKey(row)} className="grid gap-3 px-4 py-5 sm:px-6">
+            {mobileColumns.map((column) =>
+          <div key={column.key} className="grid min-w-0 grid-cols-[minmax(6.5rem,0.42fr)_minmax(0,1fr)] items-start gap-3">
+                <dt className="pt-0.5 text-xs font-bold uppercase tracking-[0.05em] text-content-muted">
+                  {column.header}
+                </dt>
+                <dd className="min-w-0 break-words text-sm text-content">
+                  {column.render(row)}
+                </dd>
+              </div>
           )}
-        </tbody>
-      </table>
+          </dl>
+        )}
+      </div>
     </div>);
 
 }

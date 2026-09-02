@@ -1,12 +1,15 @@
 package adliya.uz.referenceservice.controller;
 
 import adliya.uz.referenceservice.dto.UpdateInterfaceTranslationsRequest;
+import adliya.uz.referenceservice.dto.TranslationCoverageResponse;
 import adliya.uz.referenceservice.service.InterfaceTranslationService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -16,20 +19,19 @@ public class InterfaceTranslationController {
 
     private final InterfaceTranslationService translationService;
 
-    /** Public UI dictionary for the chosen interface language. */
     @GetMapping("/{languageCode}")
     public ResponseEntity<Map<String, String>> get(@PathVariable String languageCode) {
         return ResponseEntity.ok(translationService.getTranslations(languageCode));
     }
 
-    /** Adds or changes only the keys sent in the request. SUPER_ADMIN only. */
     @PutMapping("/{languageCode}")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<Map<String, String>> update(
             @PathVariable String languageCode,
-            @RequestBody UpdateInterfaceTranslationsRequest request
+            @Valid @RequestBody UpdateInterfaceTranslationsRequest request
     ) {
-        return ResponseEntity.ok(translationService.updateTranslations(languageCode, request.translations()));
+        translationService.updateTranslations(languageCode, request.translations());
+        return ResponseEntity.ok(translationService.getTranslations(languageCode));
     }
 
     @DeleteMapping("/{languageCode}/{key}")
@@ -37,5 +39,23 @@ public class InterfaceTranslationController {
     public ResponseEntity<Void> delete(@PathVariable String languageCode, @PathVariable String key) {
         translationService.deleteTranslation(languageCode, key);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{languageCode}/exact")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<Map<String, String>> getExact(@PathVariable String languageCode) {
+        return ResponseEntity.ok(translationService.getExactTranslations(languageCode));
+    }
+
+    @GetMapping("/{languageCode}/missing")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<List<String>> getMissing(@PathVariable String languageCode) {
+        return ResponseEntity.ok(translationService.getMissingKeys(languageCode));
+    }
+
+    @GetMapping("/{languageCode}/coverage")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<TranslationCoverageResponse> getCoverage(@PathVariable String languageCode) {
+        return ResponseEntity.ok(translationService.getCoverage(languageCode));
     }
 }

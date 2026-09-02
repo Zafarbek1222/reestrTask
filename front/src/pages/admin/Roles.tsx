@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { KeyIcon, PlusIcon, ShieldIcon, Trash2Icon, UserCheckIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '../../components/layout/AdminLayout';
@@ -9,9 +9,9 @@ import { ConfirmModal, Modal } from '../../components/ui/Modal';
 import { DataTable, type Column } from '../../components/ui/DataTable';
 import { Badge } from '../../components/ui/Badge';
 import { SkeletonText } from '../../components/ui/Skeleton';
-import { ErrorState } from '../../components/ui/States';
+import { EmptyState, ErrorState } from '../../components/ui/States';
 import { useAsync } from '../../hooks/useAsync';
-import { useI18n } from '../../contexts/I18nContext';
+import { useI18n } from '../../contexts/i18n';
 import {
   assignRole,
   createRole,
@@ -31,8 +31,12 @@ export function Roles() {
   const permissions = useAsync(getPermissions, []);
   const users = useAsync(
     async () => {
-      const [admins, moderators, plain] = await Promise.all([getOrgAdmins(), getModerators(), getRoleAssignmentCandidates()]);
-      return [...admins, ...moderators, ...plain];
+      const [admins, moderators, plain] = await Promise.all([
+        getOrgAdmins(),
+        getModerators(),
+        getRoleAssignmentCandidates()
+      ]);
+      return Array.from(new Map([...admins, ...moderators, ...plain].map((user) => [user.id, user])).values());
     },
     []
   );
@@ -132,7 +136,13 @@ export function Roles() {
   };
 
   const columns: Column<RoleEntity>[] = [
-  { key: 'id', header: t('field.id'), render: (row) => <span className="text-navy-400">#{row.id}</span> },
+  {
+    key: 'id',
+    header: t('field.id'),
+    className: 'hidden lg:table-cell',
+    headerClassName: 'hidden lg:table-cell',
+    render: (row) => <span className="text-navy-400">#{row.id}</span>
+  },
   {
     key: 'name',
     header: t('field.name'),
@@ -167,16 +177,26 @@ export function Roles() {
     headerClassName: 'text-right',
     render: (row) =>
     <div className="flex justify-end gap-1.5">
-          <Button size="sm" variant="outline" onClick={() => openPermissions(row)} icon={<KeyIcon className="h-3.5 w-3.5" />}>
-            {t('roles.editPermissions')}
+          <Button
+            size="sm"
+            variant="outline"
+            aria-label={t('roles.editPermissions')}
+            title={t('roles.editPermissions')}
+            className="px-2 2xl:px-3"
+            onClick={() => openPermissions(row)}
+            icon={<KeyIcon className="h-3.5 w-3.5" />}>
+            <span className="hidden 2xl:inline">{t('roles.editPermissions')}</span>
           </Button>
           <Button
         size="sm"
         variant="danger"
+        aria-label={t('action.delete')}
+        title={t('action.delete')}
+        className="px-2 2xl:px-3"
         onClick={() => setDeleting(row)}
         icon={<Trash2Icon className="h-3.5 w-3.5" />}>
         
-            {t('action.delete')}
+            <span className="hidden 2xl:inline">{t('action.delete')}</span>
           </Button>
         </div>
 
@@ -201,9 +221,9 @@ export function Roles() {
         } />
       
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <Panel>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.8fr)_minmax(18rem,1fr)]">
+        <div className="space-y-6">
+          <Panel className="overflow-hidden [&_table]:!min-w-0 [&_td]:!px-3 [&_th]:!px-3 sm:[&_td]:!px-6 sm:[&_th]:!px-6">
             <PanelHeader title={t('roles.title')} description={`${(roles.data ?? []).length} ${t('home.resultsCount')}`} />
             <DataTable
               columns={columns}
@@ -220,13 +240,14 @@ export function Roles() {
           <Panel>
             <PanelHeader title={t('roles.assignTitle')} />
             <PanelBody>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-5 sm:grid-cols-2">
                 <Field label={t('staff.selectUser')} error={errors.userId} required>
-                  {({ id, invalid }) =>
+                  {({ id, invalid, describedBy }) =>
                   <Select
                     id={id}
                     value={assignForm.userId}
                     invalid={invalid}
+                    aria-describedby={describedBy}
                     onChange={(event) => setAssignForm({ ...assignForm, userId: event.target.value })}>
                     
                       <option value="">{t('staff.selectUser')}</option>
@@ -239,11 +260,12 @@ export function Roles() {
                   }
                 </Field>
                 <Field label={t('field.role')} error={errors.roleId} required>
-                  {({ id, invalid }) =>
+                  {({ id, invalid, describedBy }) =>
                   <Select
                     id={id}
                     value={assignForm.roleId}
                     invalid={invalid}
+                    aria-describedby={describedBy}
                     onChange={(event) => setAssignForm({ ...assignForm, roleId: event.target.value })}>
                     
                       <option value="">{t('field.role')}</option>
@@ -263,7 +285,7 @@ export function Roles() {
           </Panel>
         </div>
 
-        <Panel className="h-fit">
+        <Panel className="h-fit overflow-hidden xl:sticky xl:top-24">
           <PanelHeader title={t('roles.permissionsPanel')} description={`${(permissions.data ?? []).length}`} />
           <PanelBody className="max-h-[520px] overflow-y-auto">
             {permissions.loading ?
@@ -271,6 +293,8 @@ export function Roles() {
             permissions.error ?
             <ErrorState error={permissions.error} onRetry={permissions.reload} /> :
 
+            grouped.length === 0 ?
+            <EmptyState title={t('state.emptyTitle')} /> :
             <div className="space-y-5">
                 {grouped.map(([category, items]) =>
               <div key={category}>
@@ -295,6 +319,7 @@ export function Roles() {
         open={createOpen}
         title={t('roles.createRole')}
         onClose={() => setCreateOpen(false)}
+        closeDisabled={saving}
         size="sm"
         footer={
         <>
@@ -310,11 +335,17 @@ export function Roles() {
         <Field
           label={t('field.name')}
           error={errors.name}
-          hint="Masalan: CATALOG_EDITOR — ruxsatlar keyin biriktiriladi"
+          hint={t('roles.nameHint', "Masalan: CATALOG_EDITOR — ruxsatlar keyin biriktiriladi")}
           required>
           
-          {({ id, invalid }) =>
-          <TextInput id={id} value={roleName} invalid={invalid} onChange={(event) => setRoleName(event.target.value)} />
+          {({ id, invalid, describedBy }) =>
+          <TextInput
+            id={id}
+            value={roleName}
+            invalid={invalid}
+            aria-describedby={describedBy}
+            autoComplete="off"
+            onChange={(event) => setRoleName(event.target.value)} />
           }
         </Field>
       </Modal>
@@ -324,6 +355,7 @@ export function Roles() {
         title={t('roles.editPermissions')}
         description={editing?.name}
         onClose={() => setEditing(null)}
+        closeDisabled={saving}
         size="lg"
         footer={
         <>

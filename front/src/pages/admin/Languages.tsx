@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CheckIcon, GlobeIcon, PlusIcon, SearchIcon, Trash2Icon } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '../../components/layout/AdminLayout';
@@ -11,7 +11,7 @@ import { Badge } from '../../components/ui/Badge';
 import { SkeletonText } from '../../components/ui/Skeleton';
 import { EmptyState, ErrorState } from '../../components/ui/States';
 import { useAsync } from '../../hooks/useAsync';
-import { useI18n } from '../../contexts/I18nContext';
+import { useI18n } from '../../contexts/i18n';
 import { addLanguage, deleteLanguage, getLanguages, searchLanguages } from '../../services/referenceService';
 import type { Language, LanguageSearchResult } from '../../types/api';
 import { errorMessage } from '../../utils/errors';
@@ -32,6 +32,7 @@ export function Languages() {
     if (query.trim().length < 1) {
       setResults([]);
       setSearchError(null);
+      setSearching(false);
       return;
     }
     let cancelled = false;
@@ -97,21 +98,35 @@ export function Languages() {
   };
 
   const columns: Column<Language>[] = [
-  { key: 'id', header: t('field.id'), render: (row) => <span className="text-navy-400">#{row.id}</span> },
+  {
+    key: 'id',
+    header: t('field.id'),
+    className: 'hidden lg:table-cell',
+    headerClassName: 'hidden lg:table-cell',
+    render: (row) => <span className="text-navy-400">#{row.id}</span>
+  },
   {
     key: 'code',
     header: 'ISO / BCP-47',
-    render: (row) => <span className="font-mono text-[12px] font-semibold uppercase text-navy-700">{row.code}</span>
+    render: (row) => <span className="font-mono text-[12px] font-semibold text-navy-700">{row.code}</span>
   },
-  { key: 'name', header: t('field.name'), render: (row) => <span className="text-navy-600">{row.name}</span> },
+  {
+    key: 'name',
+    header: t('field.name'),
+    className: 'hidden md:table-cell',
+    headerClassName: 'hidden md:table-cell',
+    render: (row) => <span className="text-navy-600">{row.name}</span>
+  },
   {
     key: 'nativeName',
-    header: 'Native',
+    header: t('lang.nativeName', 'Native name'),
     render: (row) => <span className="font-medium text-navy-900">{row.nativeName}</span>
   },
   {
     key: 'default',
     header: t('lang.default'),
+    className: 'hidden sm:table-cell',
+    headerClassName: 'hidden sm:table-cell',
     render: (row) => row.defaultLanguage ? <Badge tone="teal">{t('lang.default')}</Badge> : <span className="text-navy-400">—</span>
   },
   {
@@ -127,10 +142,13 @@ export function Languages() {
     <Button
       size="sm"
       variant="danger"
+      aria-label={t('action.delete')}
+      title={t('action.delete')}
+      className="px-2 xl:px-3"
       onClick={() => setDeleting(row)}
       icon={<Trash2Icon className="h-3.5 w-3.5" />}>
       
-            {t('action.delete')}
+            <span className="hidden xl:inline">{t('action.delete')}</span>
           </Button>
 
   }];
@@ -138,10 +156,13 @@ export function Languages() {
 
   return (
     <div>
-      <PageHeader title={t('lang.title')} description={t('lang.current')} />
+      <PageHeader
+        title={t('lang.title')}
+        description={t('lang.current')}
+        badge={<Badge tone="teal">{(languages.data ?? []).length}</Badge>} />
 
-      <div className="grid gap-6 lg:grid-cols-5">
-        <Panel className="lg:col-span-3">
+      <div className="grid gap-6 xl:grid-cols-5">
+        <Panel className="overflow-hidden [&_table]:!min-w-0 [&_td]:!px-3 [&_th]:!px-3 sm:[&_td]:!px-6 sm:[&_th]:!px-6 xl:col-span-3">
           <PanelHeader title={t('lang.current')} description={`${(languages.data ?? []).length}`} />
           <DataTable
             columns={columns}
@@ -155,27 +176,27 @@ export function Languages() {
           
         </Panel>
 
-        <Panel className="h-fit lg:col-span-2">
+        <Panel className="h-fit overflow-hidden xl:sticky xl:top-24 xl:col-span-2">
           <PanelHeader title={t('lang.searchTitle')} />
           <PanelBody className="space-y-4">
-            <label className="relative block">
-              <span className="sr-only">{t('lang.searchPlaceholder')}</span>
-              <SearchIcon
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-navy-300"
-                aria-hidden="true" />
-              
-              <TextInput
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value);
-                  setSelectedCode('');
-                }}
-                placeholder={t('lang.searchPlaceholder')}
-                className="pl-9" />
-              
+            <label className="block">
+              <span className="block text-[13px] font-medium text-navy-700">{t('lang.searchPlaceholder')}</span>
+              <span className="relative mt-2 block">
+                <SearchIcon
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-navy-300"
+                  aria-hidden="true" />
+                <TextInput
+                  value={query}
+                  onChange={(event) => {
+                    setQuery(event.target.value);
+                    setSelectedCode('');
+                  }}
+                  placeholder={t('lang.searchPlaceholder')}
+                  className="pl-9" />
+              </span>
             </label>
 
-            <div className="min-h-[120px]">
+            <div className="min-h-[144px]" aria-live="polite">
               {searching ?
               <SkeletonText lines={4} /> :
               searchError ?
@@ -187,7 +208,7 @@ export function Languages() {
 
               <ul className="max-h-64 space-y-1 overflow-y-auto">
                   {results.map((item) => {
-                  const already = item.alreadyAdded || existingCodes.has(item.code);
+                  const already = item.alreadyAdded || existingCodes.has(item.code.toLowerCase());
                   const selected = selectedCode === item.code;
                   return (
                     <li key={item.code}>
@@ -195,18 +216,18 @@ export function Languages() {
                         type="button"
                         disabled={already}
                         onClick={() => setSelectedCode(item.code)}
-                        className={`flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-                        selected ? 'border-teal-400 bg-teal-50' : 'border-navy-100 hover:border-navy-200'}`
+                        className={`flex min-h-14 w-full min-w-0 items-center justify-between gap-3 overflow-hidden rounded-xl border px-3 py-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                        selected ? 'border-teal-300 bg-teal-50 ring-1 ring-inset ring-teal-100' : 'border-navy-100 hover:border-navy-200 hover:bg-navy-50/50'}`
                         }>
                         
-                          <span>
-                            <span className="block text-[13px] font-medium text-navy-900">{item.nativeName}</span>
-                            <span className="block font-mono text-[11px] uppercase text-navy-400">
+                          <span className="min-w-0">
+                            <span className="block break-words text-[13px] font-medium text-navy-900">{item.nativeName}</span>
+                            <span className="block break-all font-mono text-[11px] text-navy-400">
                               {item.code} · {item.name}
                             </span>
                           </span>
                           {already ?
-                        <Badge tone="gray">Qo‘shilgan</Badge> :
+                        <Badge tone="gray">{t('lang.alreadyAdded', "Qo'shilgan")}</Badge> :
                         selected ?
                         <CheckIcon className="h-4 w-4 text-teal-600" aria-hidden="true" /> :
                         null}

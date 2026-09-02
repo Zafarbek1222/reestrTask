@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ArrowUpCircleIcon, PencilIcon, PlusIcon, PowerOffIcon, SearchIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '../../components/layout/AdminLayout';
@@ -10,8 +10,8 @@ import { ConfirmModal, Modal } from '../../components/ui/Modal';
 import { DataTable, type Column } from '../../components/ui/DataTable';
 import { Badge, StatusBadge } from '../../components/ui/Badge';
 import { useAsync } from '../../hooks/useAsync';
-import { useAuth } from '../../contexts/AuthContext';
-import { useI18n } from '../../contexts/I18nContext';
+import { useAuth } from '../../contexts/auth';
+import { useI18n } from '../../contexts/i18n';
 import { getOrganizations } from '../../services/organizationService';
 import {
   createModerator,
@@ -72,7 +72,7 @@ export function Moderators() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
-  const allOrgs = organizations.data ?? [];
+  const allOrgs = useMemo(() => organizations.data ?? [], [organizations.data]);
   const assignableOrgs = useMemo(
     () =>
     allOrgs.
@@ -215,17 +215,37 @@ export function Moderators() {
   };
 
   const columns: Column<StaffUser>[] = [
-  { key: 'id', header: t('field.id'), render: (row) => <span className="text-navy-400">#{row.id}</span> },
+  {
+    key: 'id',
+    header: t('field.id'),
+    className: 'hidden lg:table-cell',
+    headerClassName: 'hidden lg:table-cell',
+    render: (row) => <span className="text-navy-400">#{row.id}</span>
+  },
   {
     key: 'name',
     header: t('field.fullName'),
     render: (row) => <span className="font-medium text-navy-900">{fullName(row)}</span>
   },
-  { key: 'email', header: t('field.email'), render: (row) => <span className="text-navy-600">{row.email}</span> },
-  { key: 'phone', header: t('field.phone'), render: (row) => <span className="text-navy-500">{row.phone ?? '—'}</span> },
+  {
+    key: 'email',
+    header: t('field.email'),
+    className: 'hidden sm:table-cell',
+    headerClassName: 'hidden sm:table-cell',
+    render: (row) => <span className="text-navy-600">{row.email}</span>
+  },
+  {
+    key: 'phone',
+    header: t('field.phone'),
+    className: 'hidden xl:table-cell',
+    headerClassName: 'hidden xl:table-cell',
+    render: (row) => <span className="text-navy-500">{row.phone ?? '—'}</span>
+  },
   {
     key: 'organizations',
     header: t('field.organizations'),
+    className: 'hidden md:table-cell',
+    headerClassName: 'hidden md:table-cell',
     render: (row) =>
     <div className="flex flex-wrap gap-1">
           {row.organizationIds.length === 0 ?
@@ -248,17 +268,27 @@ export function Moderators() {
     headerClassName: 'text-right',
     render: (row) =>
     <div className="flex justify-end gap-1.5">
-          <Button size="sm" variant="outline" onClick={() => openEdit(row)} icon={<PencilIcon className="h-3.5 w-3.5" />}>
-            {t('action.edit')}
+          <Button
+            size="sm"
+            variant="outline"
+            aria-label={t('action.edit')}
+            title={t('action.edit')}
+            className="px-2 xl:px-3"
+            onClick={() => openEdit(row)}
+            icon={<PencilIcon className="h-3.5 w-3.5" />}>
+            <span className="hidden xl:inline">{t('action.edit')}</span>
           </Button>
           {row.enabled &&
       <Button
         size="sm"
         variant="danger"
+        aria-label={t('action.deactivate')}
+        title={t('action.deactivate')}
+        className="px-2 xl:px-3"
         onClick={() => setDeactivating(row)}
         icon={<PowerOffIcon className="h-3.5 w-3.5" />}>
         
-              {t('action.deactivate')}
+              <span className="hidden xl:inline">{t('action.deactivate')}</span>
             </Button>
       }
         </div>
@@ -297,11 +327,11 @@ export function Moderators() {
         } />
       
 
-      <Panel>
+      <Panel className="overflow-hidden [&_table]:!min-w-0 [&_td]:!px-3 [&_th]:!px-3 sm:[&_td]:!px-6 sm:[&_th]:!px-6">
         <PanelHeader
           title={`${rows.length} ${t('home.resultsCount')}`}
           actions={
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:flex sm:w-auto">
               <label className="relative">
                 <span className="sr-only">{t('action.search')}</span>
                 <SearchIcon
@@ -312,10 +342,14 @@ export function Moderators() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder={t('action.search')}
-                className="h-10 w-full pl-9 sm:w-52" />
+                className="h-11 w-full pl-9 sm:w-52" />
               
               </label>
-              <Select value={orgFilter} onChange={(event) => setOrgFilter(event.target.value)} className="h-10 sm:w-48">
+              <Select
+                value={orgFilter}
+                aria-label={t('field.organization')}
+                onChange={(event) => setOrgFilter(event.target.value)}
+                className="h-11 sm:w-48">
                 <option value="">
                   {t('field.organization')} — {t('status.all')}
                 </option>
@@ -325,7 +359,11 @@ export function Moderators() {
                   </option>
               )}
               </Select>
-              <Select value={status} onChange={(event) => setStatus(event.target.value)} className="h-10 sm:w-36">
+              <Select
+                value={status}
+                aria-label={t('field.status')}
+                onChange={(event) => setStatus(event.target.value)}
+                className="h-11 sm:w-36">
                 <option value="">{t('status.all')}</option>
                 <option value="active">{t('status.active')}</option>
                 <option value="inactive">{t('status.inactive')}</option>
@@ -350,6 +388,7 @@ export function Moderators() {
         open={createOpen}
         title={t('staff.createModerator')}
         onClose={() => setCreateOpen(false)}
+        closeDisabled={saving}
         footer={
         <>
             <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={saving}>
@@ -361,56 +400,71 @@ export function Moderators() {
           </>
         }>
         
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-2">
           <Field label={t('field.firstName')} error={errors.firstName} required>
-            {({ id, invalid }) =>
+            {({ id, invalid, describedBy }) =>
             <TextInput
               id={id}
               value={createForm.firstName}
+              maxLength={70}
+              autoComplete="given-name"
               invalid={invalid}
+              aria-describedby={describedBy}
               onChange={(event) => setCreateForm({ ...createForm, firstName: event.target.value })} />
 
             }
           </Field>
           <Field label={t('field.lastName')} error={errors.lastName} required>
-            {({ id, invalid }) =>
+            {({ id, invalid, describedBy }) =>
             <TextInput
               id={id}
               value={createForm.lastName}
+              maxLength={70}
+              autoComplete="family-name"
               invalid={invalid}
+              aria-describedby={describedBy}
               onChange={(event) => setCreateForm({ ...createForm, lastName: event.target.value })} />
 
             }
           </Field>
           <Field label={t('field.email')} error={errors.email} required className="sm:col-span-2">
-            {({ id, invalid }) =>
+            {({ id, invalid, describedBy }) =>
             <TextInput
               id={id}
               type="email"
               value={createForm.email}
+              autoComplete="email"
               invalid={invalid}
+              aria-describedby={describedBy}
               onChange={(event) => setCreateForm({ ...createForm, email: event.target.value })} />
 
             }
           </Field>
           <Field label={t('field.password')} error={errors.password} hint={t('security.passwordRule')} required>
-            {({ id, invalid }) =>
+            {({ id, invalid, describedBy }) =>
             <TextInput
               id={id}
               type="password"
               autoComplete="new-password"
               value={createForm.password}
+              minLength={8}
+              maxLength={100}
               invalid={invalid}
+              aria-describedby={describedBy}
               onChange={(event) => setCreateForm({ ...createForm, password: event.target.value })} />
 
             }
           </Field>
           <Field label={t('field.phone')} error={errors.phone} hint={t('field.optional')}>
-            {({ id, invalid }) =>
+            {({ id, invalid, describedBy }) =>
             <TextInput
               id={id}
+              type="tel"
               value={createForm.phone}
+              maxLength={20}
+              autoComplete="tel"
               invalid={invalid}
+              aria-describedby={describedBy}
               placeholder="+998 90 000 00 00"
               onChange={(event) => setCreateForm({ ...createForm, phone: event.target.value })} />
 
@@ -433,6 +487,7 @@ export function Moderators() {
         open={promoteOpen}
         title={t('staff.promoteTitle')}
         onClose={() => setPromoteOpen(false)}
+        closeDisabled={saving}
         footer={
         <>
             <Button variant="outline" onClick={() => setPromoteOpen(false)} disabled={saving}>
@@ -446,11 +501,12 @@ export function Moderators() {
         
         <div className="space-y-4">
           <Field label={t('staff.selectUser')} error={errors.userId} required>
-            {({ id, invalid }) =>
+            {({ id, invalid, describedBy }) =>
             <Select
               id={id}
               value={promoteForm.userId}
               invalid={invalid}
+              aria-describedby={describedBy}
               onChange={(event) => setPromoteForm({ ...promoteForm, userId: event.target.value })}>
               
                 <option value="">{t('staff.selectUser')}</option>
@@ -478,6 +534,7 @@ export function Moderators() {
         title={t('action.edit')}
         description={editing ? `#${editing.id} · ${editing.email}` : undefined}
         onClose={() => setEditing(null)}
+        closeDisabled={saving}
         footer={
         <>
             <Button variant="outline" onClick={() => setEditing(null)} disabled={saving}>
@@ -489,33 +546,43 @@ export function Moderators() {
           </>
         }>
         
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-2">
           <Field label={t('field.firstName')} error={errors.firstName}>
-            {({ id, invalid }) =>
+            {({ id, invalid, describedBy }) =>
             <TextInput
               id={id}
               value={editForm.firstName}
+              maxLength={70}
+              autoComplete="given-name"
               invalid={invalid}
+              aria-describedby={describedBy}
               onChange={(event) => setEditForm({ ...editForm, firstName: event.target.value })} />
 
             }
           </Field>
           <Field label={t('field.lastName')} error={errors.lastName}>
-            {({ id, invalid }) =>
+            {({ id, invalid, describedBy }) =>
             <TextInput
               id={id}
               value={editForm.lastName}
+              maxLength={70}
+              autoComplete="family-name"
               invalid={invalid}
+              aria-describedby={describedBy}
               onChange={(event) => setEditForm({ ...editForm, lastName: event.target.value })} />
 
             }
           </Field>
           <Field label={t('field.phone')} error={errors.phone} className="sm:col-span-2">
-            {({ id, invalid }) =>
+            {({ id, invalid, describedBy }) =>
             <TextInput
               id={id}
+              type="tel"
               value={editForm.phone}
+              maxLength={20}
+              autoComplete="tel"
               invalid={invalid}
+              aria-describedby={describedBy}
               onChange={(event) => setEditForm({ ...editForm, phone: event.target.value })} />
 
             }
@@ -530,7 +597,7 @@ export function Moderators() {
             hint={t('staff.orgsMandatory')}
             columns={2} />
           
-          <label className="flex items-center gap-2.5 text-sm text-navy-700 sm:col-span-2">
+          <label className="flex min-h-11 items-center gap-2.5 rounded-xl border border-navy-100 bg-navy-50/60 px-3 text-sm font-medium text-navy-700 sm:col-span-2">
             <input
               type="checkbox"
               className="h-4 w-4 rounded border-navy-300 text-teal-600 focus:ring-teal-500"

@@ -1,63 +1,48 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useId } from 'react';
 import { ChevronDownIcon, GlobeIcon } from 'lucide-react';
-import { useI18n } from '../../contexts/I18nContext';
+import { useI18n } from '../../contexts/i18n';
 
-export function LanguageSwitcher({ tone = 'dark' }: {tone?: 'dark' | 'light';}) {
-  const { locale, setLocale, available } = useI18n();
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+export function LanguageSwitcher({
+  tone = 'dark',
+  compact = false
+}: {
+  tone?: 'dark' | 'light';
+  compact?: boolean;
+}) {
+  const { locale, setLocale, available, t } = useI18n();
+  const selectId = useId();
   const isLight = tone === 'light';
-
-  useEffect(() => {
-    const handler = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  const current = available.find((item) => item.code === locale);
+  const currentIsAvailable = available.some((item) => item.code.toLowerCase() === locale.toLowerCase());
 
   return (
-    <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition-colors ${
-        isLight ? 'text-white/90 hover:bg-white/10' : 'text-navy-600 hover:bg-navy-50'}`
-        }>
-        
-        <GlobeIcon className="h-4 w-4" aria-hidden="true" />
-        {current?.label ?? locale.toUpperCase()}
-        <ChevronDownIcon className="h-3.5 w-3.5" aria-hidden="true" />
-      </button>
-      {open &&
-      <ul
-        role="listbox"
-        className="absolute right-0 z-40 mt-1 w-40 overflow-hidden rounded-lg border border-navy-100 bg-white py-1 shadow-pop">
-        
-          {available.map((item) =>
-        <li key={item.code}>
-              <button
-            type="button"
-            role="option"
-            aria-selected={item.code === locale}
-            onClick={() => {
-              setLocale(item.code);
-              setOpen(false);
-            }}
-            className={`block w-full px-3 py-2 text-left text-[13px] transition-colors hover:bg-navy-50 ${
-            item.code === locale ? 'font-semibold text-teal-700' : 'text-navy-700'}`
-            }>
-            
-                {item.label}
-              </button>
-            </li>
+    <div className="relative inline-flex min-h-11 max-w-full items-center">
+      <label htmlFor={selectId} className="sr-only">
+        {t('field.language')}
+      </label>
+      <GlobeIcon
+        className={`pointer-events-none absolute left-3 h-4 w-4 ${isLight ? 'text-white/85' : 'text-content-muted'}`}
+        aria-hidden="true"
+      />
+      <select
+        id={selectId}
+        value={locale}
+        onChange={(event) => setLocale(event.target.value)}
+        className={`min-h-11 ${compact ? 'max-w-32' : 'max-w-[11rem]'} cursor-pointer appearance-none truncate rounded-control border py-2 pl-9 pr-9 text-sm font-semibold transition-[background-color,border-color,color,box-shadow] duration-fast focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus/20 ${
+          isLight
+            ? 'border-white/25 bg-transparent text-white hover:border-white/40 hover:bg-white/10'
+            : 'border-line bg-surface text-content hover:border-line-strong hover:bg-surface-subtle'
+        }`}>
+        {!currentIsAvailable && <option value={locale}>{locale}</option>}
+        {available.map((item) =>
+        <option key={item.code} value={item.code} className="bg-white text-navy-900">
+            {item.label}
+          </option>
         )}
-        </ul>
-      }
+      </select>
+      <ChevronDownIcon
+        className={`pointer-events-none absolute right-3 h-4 w-4 ${isLight ? 'text-white/75' : 'text-content-muted'}`}
+        aria-hidden="true"
+      />
     </div>);
 
 }

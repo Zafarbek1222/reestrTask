@@ -1,32 +1,35 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { getInterfaceTranslations, getLanguages } from '../services/referenceService';
-
-export interface InterfaceLanguage {
-  code: string;
-  label: string;
-}
-
-interface I18nValue {
-  locale: string;
-  setLocale: (locale: string) => void;
-  t: (key: string) => string;
-  available: InterfaceLanguage[];
-  reloadLanguages: () => Promise<void>;
-}
-
-const I18nContext = createContext<I18nValue | null>(null);
+import { I18nContext, type I18nValue, type InterfaceLanguage } from './i18n';
 const DEFAULT_LOCALE = 'uz';
 const STORAGE_KEY = 'reestr-task-locale';
+const RTL_LANGUAGES = new Set(['ar', 'ckb', 'dv', 'fa', 'he', 'ku', 'ps', 'sd', 'ug', 'ur', 'yi']);
+const RTL_SCRIPTS = new Set(['Adlm', 'Arab', 'Hebr', 'Mand', 'Nkoo', 'Rohg', 'Samr', 'Syrc', 'Thaa']);
+const DICTIONARY_TIMEOUT_MS = 5_000;
+
+function directionForLocale(locale: string): 'ltr' | 'rtl' {
+  const parts = locale.replace(/_/g, '-').split('-');
+  const script = parts.find((part) => /^[A-Za-z]{4}$/.test(part));
+  if (script) {
+    const canonicalScript = `${script[0].toUpperCase()}${script.slice(1).toLowerCase()}`;
+    return RTL_SCRIPTS.has(canonicalScript) ? 'rtl' : 'ltr';
+  }
+  return RTL_LANGUAGES.has(parts[0].toLowerCase()) ? 'rtl' : 'ltr';
+}
 
 function initialLocale(): string {
   if (typeof window === 'undefined') return DEFAULT_LOCALE;
   return window.localStorage.getItem(STORAGE_KEY) || DEFAULT_LOCALE;
 }
 
-export function I18nProvider({ children }: {children: React.ReactNode;}) {
+export function I18nProvider({ children }: {children: ReactNode;}) {
   const [locale, setLocaleState] = useState<string>(initialLocale);
+  const [contentLocale, setContentLocale] = useState<string>(initialLocale);
   const [available, setAvailable] = useState<InterfaceLanguage[]>([]);
   const [translations, setTranslations] = useState<Record<string, string>>({});
+  const [ready, setReady] = useState(false);
+  const dictionaryCache = useRef(new Map<string, Record<string, string>>());
+  const lastSuccessfulLocale = useRef<string | null>(null);
 
   const setLocale = useCallback((nextLocale: string) => {
     setLocaleState(nextLocale);
@@ -44,7 +47,13 @@ export function I18nProvider({ children }: {children: React.ReactNode;}) {
       if (nextAvailable.length === 0) return;
       setAvailable(nextAvailable);
       setLocaleState((current) => {
-        if (nextAvailable.some((language) => language.code === current)) return current;
+        const currentLanguage = nextAvailable.find(
+          (language) => language.code.toLowerCase() === current.toLowerCase()
+        );
+        if (currentLanguage) {
+          if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_KEY, currentLanguage.code);
+          return currentLanguage.code;
+        }
         const fallback = nextAvailable.find((language) => language.code === DEFAULT_LOCALE) ?? nextAvailable[0];
         if (typeof window !== 'undefined') window.localStorage.setItem(STORAGE_KEY, fallback.code);
         return fallback.code;
@@ -60,25 +69,58 @@ export function I18nProvider({ children }: {children: React.ReactNode;}) {
   }, [reloadLanguages]);
 
   useEffect(() => {
-    let cancelled = false;
-    setTranslations({});
+    document.documentElement.lang = contentLocale;
+    document.documentElement.dir = directionForLocale(contentLocale);
+  }, [contentLocale]);
 
-    getInterfaceTranslations(locale)
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), DICTIONARY_TIMEOUT_MS);
+    const cached = dictionaryCache.current.get(locale);
+    if (cached) {
+      lastSuccessfulLocale.current = locale;
+      setTranslations(cached);
+      setContentLocale(locale);
+      setReady(true);
+      window.clearTimeout(timeout);
+      return () => controller.abort();
+    }
+
+    getInterfaceTranslations(locale, controller.signal)
       .then((dictionary) => {
-        if (!cancelled) setTranslations(dictionary);
+        dictionaryCache.current.set(locale, dictionary);
+        if (!cancelled) {
+          lastSuccessfulLocale.current = locale;
+          setTranslations(dictionary);
+          setContentLocale(locale);
+        }
       })
       .catch(() => {
-        if (!cancelled) setTranslations({});
+        if (cancelled) return;
+        const fallbackLocale = lastSuccessfulLocale.current;
+        if (fallbackLocale && fallbackLocale !== locale) {
+          setLocaleState(fallbackLocale);
+          window.localStorage.setItem(STORAGE_KEY, fallbackLocale);
+        } else {
+          setTranslations({});
+        }
+      })
+      .finally(() => {
+        window.clearTimeout(timeout);
+        if (!cancelled) setReady(true);
       });
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timeout);
+      controller.abort();
     };
   }, [locale]);
 
   const t = useCallback(
-    (key: string): string => {
-      return translations[key] || key;
+    (key: string, fallback?: string): string => {
+      return translations[key] || fallback || key;
     },
     [translations]
   );
@@ -88,11 +130,13 @@ export function I18nProvider({ children }: {children: React.ReactNode;}) {
     [locale, setLocale, t, available, reloadLanguages]
   );
 
-  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
-}
+  if (!ready) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-navy-50" role="status" aria-label="Loading">
+        <span className="h-7 w-7 animate-spin rounded-full border-2 border-navy-200 border-t-teal-600" aria-hidden="true" />
+      </div>
+    );
+  }
 
-export function useI18n(): I18nValue {
-  const context = useContext(I18nContext);
-  if (!context) throw new Error('useI18n must be used inside I18nProvider');
-  return context;
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

@@ -27,8 +27,7 @@ springdoc:
     path: /swagger
 
 jwt:
-  private-key: ${JWT_PRIVATE_KEY}
-  public-key: ${JWT_PUBLIC_KEY}
+  secret: ${JWT_SECRET}
   expiration: 86400000
   refresh-expiration: 604800000
 
@@ -51,12 +50,3 @@ eureka:
       defaultZone: http://localhost:8761/eureka
   instance:
     prefer-ip-address: true
-
-azure:
-  translator:
-    endpoint: ${AZURE_TRANSLATOR_ENDPOINT:https://api.cognitive.microsofttranslator.com}
-    key: ${AZURE_TRANSLATOR_KEY:}
-    region: ${AZURE_TRANSLATOR_REGION:}
-
-reference-service:
-  base-url: ${REFERENCE_SERVICE_BASE_URL:http://localhost:8084}

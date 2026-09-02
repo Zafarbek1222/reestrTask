@@ -41,15 +41,13 @@ public class SecurityConfig {
 
                         .requestMatchers(
                                 HttpMethod.GET,
-                                "/api/languages",
-                                "/api/languages/search",
-                                "/api/interface-translations/**"
+                                "/api/interface-translations/*"
                         ).permitAll()
 
                         .requestMatchers(
-                                HttpMethod.POST,
-                                "/internal/interface-translations/**"
-                        ).permitAll()
+                                "/api/interface-translations/**",
+                                "/api/translation-keys/**"
+                        ).hasRole("SUPER_ADMIN")
 
                         .requestMatchers(
                                 "/swagger",

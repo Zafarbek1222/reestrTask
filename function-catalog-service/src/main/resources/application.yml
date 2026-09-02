@@ -24,14 +24,8 @@ eureka:
     prefer-ip-address: true
 
 jwt:
-  public-key: ${JWT_PUBLIC_KEY}
+  secret: ${JWT_SECRET}
 
 springdoc:
   swagger-ui:
     path: /swagger
-
-azure:
-  translator:
-    endpoint: ${AZURE_TRANSLATOR_ENDPOINT:https://api.cognitive.microsofttranslator.com}
-    key: ${AZURE_TRANSLATOR_KEY:}
-    region: ${AZURE_TRANSLATOR_REGION:}

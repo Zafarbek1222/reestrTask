@@ -17,8 +17,8 @@ export function getLanguages(): Promise<Language[]> {
 }
 
 /** GET /api/interface-translations/{languageCode} */
-export function getInterfaceTranslations(languageCode: string): Promise<Record<string, string>> {
-  return apiRequest<Record<string, string>>(`/api/interface-translations/${encodeURIComponent(languageCode)}`);
+export function getInterfaceTranslations(languageCode: string, signal?: AbortSignal): Promise<Record<string, string>> {
+  return apiRequest<Record<string, string>>(`/api/interface-translations/${encodeURIComponent(languageCode)}`, { signal });
 }
 
 /** GET /api/languages/search?q={query}; this is available to SUPER_ADMIN only. */

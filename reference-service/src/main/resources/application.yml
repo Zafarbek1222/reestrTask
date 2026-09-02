@@ -15,6 +15,11 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: 0
+  cache:
+    type: caffeine
 
 eureka:
   client:
@@ -24,14 +29,8 @@ eureka:
     prefer-ip-address: true
 
 jwt:
-  public-key: ${JWT_PUBLIC_KEY}
+  secret: ${JWT_SECRET}
 
 springdoc:
   swagger-ui:
     path: /swagger
-
-azure:
-  translator:
-    endpoint: ${AZURE_TRANSLATOR_ENDPOINT:https://api.cognitive.microsofttranslator.com}
-    key: ${AZURE_TRANSLATOR_KEY:}
-    region: ${AZURE_TRANSLATOR_REGION:}

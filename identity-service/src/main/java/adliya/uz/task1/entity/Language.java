@@ -25,7 +25,7 @@ public class Language {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 2)
+    @Column(nullable = false, unique = true, length = 64)
     private String code;
 
     @Column(name = "name_native", nullable = false, length = 100)

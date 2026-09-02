@@ -1,16 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
+import { AlertCircleIcon, ArrowLeftIcon, LogInIcon, ShieldCheckIcon } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { AlertCircleIcon, LogInIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Logo } from '../components/layout/Logo';
 import { LanguageSwitcher } from '../components/layout/LanguageSwitcher';
 import { Button } from '../components/ui/Button';
 import { Field, TextInput } from '../components/ui/Field';
-import { homeRouteForRole, useAuth } from '../contexts/AuthContext';
-import { useI18n } from '../contexts/I18nContext';
+import { homeRouteForRole, useAuth } from '../contexts/auth';
+import { useI18n } from '../contexts/i18n';
 import { errorMessage, fieldErrorsOf, statusOf } from '../utils/errors';
 
-const HERO_IMAGE = "/3e42b6c2-ea58-46c4-a3f2-45342d80cb5b.jpg";
+const HERO_IMAGE = '/3e42b6c2-ea58-46c4-a3f2-45342d80cb5b.jpg';
 
 export function Login() {
   const { t } = useI18n();
@@ -30,16 +30,26 @@ export function Login() {
     }
   }, [user, navigate]);
 
+  const clearFieldError = (field: string) => {
+    setErrors((current) => {
+      if (!current[field]) return current;
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+    setFormError(null);
+  };
+
   const validate = (): boolean => {
     const next: Record<string, string> = {};
-    if (!email.trim()) next.email = t('validation.required');else
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) next.email = t('validation.email');
+    if (!email.trim()) next.email = t('validation.required');
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) next.email = t('validation.email');
     if (!password) next.password = t('validation.required');
     setErrors(next);
     return Object.keys(next).length === 0;
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setFormError(null);
     if (!validate()) return;
@@ -47,9 +57,10 @@ export function Login() {
     try {
       const authenticated = await signIn(email.trim(), password);
       toast.success(t('login.success'));
-      const from = (location.state as {from?: string;} | null)?.from;
+      const from = (location.state as { from?: string } | null)?.from;
+      const safeFrom = from?.startsWith('/') && !from.startsWith('//') && !from.includes('\\') ? from : undefined;
       navigate(
-        authenticated.mustChangePassword ? '/settings/security' : from ?? homeRouteForRole(authenticated.role),
+        authenticated.mustChangePassword ? '/settings/security' : safeFrom ?? homeRouteForRole(authenticated.role),
         { replace: true }
       );
     } catch (error) {
@@ -62,91 +73,130 @@ export function Login() {
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-[#f4f6f9]">
-      <div className="relative hidden w-1/2 shrink-0 lg:block">
-        <img src={HERO_IMAGE} alt="" aria-hidden="true" className="h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-navy-950/70" />
-        <div className="absolute inset-0 flex flex-col justify-between p-10">
+    <div className="flex min-h-screen min-h-dvh w-full bg-canvas">
+      <a
+        href="#login-main"
+        className="fixed left-4 top-3 z-50 -translate-y-20 rounded-lg bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white shadow-pop transition-transform focus:translate-y-0"
+      >
+        {t('a11y.skipToContent', "Asosiy tarkibga o'tish")}
+      </a>
+
+      <aside className="relative hidden w-[46%] shrink-0 overflow-hidden bg-navy-950 lg:block">
+        <img
+          src={HERO_IMAGE}
+          alt=""
+          aria-hidden="true"
+          width={1376}
+          height={768}
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover opacity-45"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,15,28,0.3)_0%,rgba(7,15,28,0.92)_100%)]" aria-hidden="true" />
+        <div className="relative flex h-full flex-col justify-between p-10 xl:p-14">
           <Logo tone="light" />
-          <div>
-            <h2 className="max-w-sm font-display text-3xl font-extrabold leading-tight text-white">
+          <div className="max-w-lg">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-teal-200">
+              <ShieldCheckIcon className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <h2 className="mt-5 font-display text-3xl font-extrabold leading-tight tracking-tight text-white xl:text-4xl">
               {t('home.ctaTitle')}
             </h2>
-            <p className="mt-3 max-w-sm text-sm leading-relaxed text-navy-200">{t('home.ctaText')}</p>
-            <p className="mt-8 max-w-sm text-[12px] text-navy-300">{t('app.demoNotice')}</p>
+            <p className="mt-4 max-w-md text-sm leading-7 text-navy-200">{t('home.ctaText')}</p>
+            <p className="mt-8 max-w-md border-l-2 border-teal-500 pl-4 text-xs leading-5 text-navy-300">
+              {t('app.demoNotice')}
+            </p>
           </div>
         </div>
-      </div>
+      </aside>
 
-      <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between px-4 sm:px-8">
-          <div className="lg:hidden">
-            <Logo />
-          </div>
-          <div className="ml-auto">
-            <LanguageSwitcher />
-          </div>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex min-h-[4.5rem] items-center justify-between gap-3 border-b border-navy-100 px-4 sm:px-8 lg:justify-end lg:border-b-0">
+          <div className="min-w-0 lg:hidden"><Logo /></div>
+          <div className="shrink-0"><LanguageSwitcher /></div>
         </header>
 
-        <main className="flex flex-1 items-center justify-center px-4 py-10 sm:px-8">
-          <div className="w-full max-w-sm">
-            <h1 className="font-display text-2xl font-extrabold tracking-tight text-navy-900">{t('login.title')}</h1>
-            <p className="mt-1.5 text-sm text-navy-500">{t('login.subtitle')}</p>
+        <main id="login-main" tabIndex={-1} className="flex flex-1 items-center justify-center px-4 py-10 focus:outline-none sm:px-8 sm:py-14">
+          <div className="w-full max-w-md">
+            <Link
+              to="/"
+              className="mb-8 inline-flex min-h-11 items-center gap-2 rounded-lg text-sm font-semibold text-navy-500 transition-colors hover:text-navy-950"
+            >
+              <ArrowLeftIcon className="h-4 w-4 rtl:rotate-180" aria-hidden="true" />
+              {t('nav.backToSite')}
+            </Link>
 
-            {formError &&
-            <div
-              role="alert"
-              className="mt-5 flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-[13px] font-medium text-red-700">
-              
-                <AlertCircleIcon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                {formError}
-              </div>
-            }
+            <div className="rounded-2xl border border-navy-100 bg-white p-5 shadow-card sm:p-8">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-700">{t('nav.admin')}</p>
+              <h1 className="mt-2 font-display text-2xl font-extrabold tracking-tight text-navy-950 sm:text-3xl">
+                {t('login.title')}
+              </h1>
+              <p className="mt-2 text-sm leading-6 text-navy-500">{t('login.subtitle')}</p>
 
-            <form className="mt-6 space-y-4" onSubmit={handleSubmit} noValidate>
-              <Field label={t('field.email')} error={errors.email} required>
-                {({ id, invalid, describedBy }) =>
-                <TextInput
-                  id={id}
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  invalid={invalid}
-                  aria-describedby={describedBy}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="ism.familiya@reestrtask.uz" />
+              {formError && (
+                <div
+                  role="alert"
+                  className="mt-6 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3.5 text-[13px] font-medium leading-5 text-red-700"
+                >
+                  <AlertCircleIcon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                  {formError}
+                </div>
+              )}
 
-                }
-              </Field>
+              <form className="mt-6 space-y-5" onSubmit={handleSubmit} noValidate>
+                <Field label={t('field.email')} error={errors.email} required>
+                  {({ id, invalid, describedBy }) => (
+                    <TextInput
+                      id={id}
+                      type="email"
+                      autoComplete="email"
+                      required
+                      aria-required="true"
+                      value={email}
+                      invalid={invalid}
+                      aria-describedby={describedBy}
+                      onChange={(event) => {
+                        setEmail(event.target.value);
+                        clearFieldError('email');
+                      }}
+                      placeholder="ism.familiya@reestrtask.uz"
+                    />
+                  )}
+                </Field>
 
-              <Field label={t('field.password')} error={errors.password} required>
-                {({ id, invalid, describedBy }) =>
-                <TextInput
-                  id={id}
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  invalid={invalid}
-                  aria-describedby={describedBy}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="••••••••" />
+                <Field label={t('field.password')} error={errors.password} required>
+                  {({ id, invalid, describedBy }) => (
+                    <TextInput
+                      id={id}
+                      type="password"
+                      autoComplete="current-password"
+                      required
+                      aria-required="true"
+                      value={password}
+                      invalid={invalid}
+                      aria-describedby={describedBy}
+                      onChange={(event) => {
+                        setPassword(event.target.value);
+                        clearFieldError('password');
+                      }}
+                      placeholder="••••••••"
+                    />
+                  )}
+                </Field>
 
-                }
-              </Field>
-
-              <Button type="submit" className="w-full" loading={submitting} icon={<LogInIcon className="h-4 w-4" />}>
-                {t('action.login')}
-              </Button>
-            </form>
-
-            <p className="mt-6 text-center text-[13px] text-navy-400">
-              <Link to="/" className="font-medium text-navy-600 hover:text-navy-900">
-                {t('nav.backToSite')}
-              </Link>
-            </p>
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full"
+                  loading={submitting}
+                  icon={<LogInIcon className="h-4 w-4" aria-hidden="true" />}
+                >
+                  {t('action.login')}
+                </Button>
+              </form>
+            </div>
           </div>
         </main>
       </div>
-    </div>);
-
+    </div>
+  );
 }

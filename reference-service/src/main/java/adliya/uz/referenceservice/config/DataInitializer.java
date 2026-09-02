@@ -2,7 +2,6 @@ package adliya.uz.referenceservice.config;
 
 import adliya.uz.referenceservice.entity.Region;
 import adliya.uz.referenceservice.repository.RegionRepository;
-import adliya.uz.referenceservice.service.InterfaceTranslationService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -15,20 +14,14 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private final RegionRepository regionRepository;
-    private final InterfaceTranslationService translationService;
 
-    public DataInitializer(
-            RegionRepository regionRepository,
-            InterfaceTranslationService translationService
-    ) {
+    public DataInitializer(RegionRepository regionRepository) {
         this.regionRepository = regionRepository;
-        this.translationService = translationService;
     }
 
     @Override
     public void run(String... args) {
         seedRegions();
-        translationService.seedSourceTranslations();
     }
 
     private void seedRegions() {

@@ -35,7 +35,7 @@ spring:
             - id: reference-service
               uri: lb://reference-service
               predicates:
-                - Path=/api/regions/**,/api/interface-translations/**
+                - Path=/api/regions/**,/api/interface-translations/**,/api/translation-keys/**
             - id: function-catalog-service
               uri: lb://function-catalog-service
               predicates:

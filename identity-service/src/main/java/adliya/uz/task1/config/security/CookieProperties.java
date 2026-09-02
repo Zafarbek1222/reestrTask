@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "app.cookie")
 public class CookieProperties {
     private boolean secure = true;
-    private String sameSite = "Strict";
+    private String sameSite = "None";
     private String accessTokenName = "accessToken";
     private String refreshTokenName = "refreshToken";
     private String refreshTokenPath = "/api/auth";

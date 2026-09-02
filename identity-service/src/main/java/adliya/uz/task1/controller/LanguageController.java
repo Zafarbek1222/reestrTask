@@ -45,9 +45,10 @@ public class LanguageController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('SUPER_A" +
+            "DMIN')")
     public ResponseEntity<LanguageResponse> add(@Valid @RequestBody AddLanguageRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(LanguageResponse.from(languageService.add(request.code())));
+        return ResponseEntity.status(HttpStatus.CREATED).body(LanguageResponse.from(languageService.add(request)));
     }
 
     @DeleteMapping("/{id}")

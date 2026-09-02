@@ -1,29 +1,33 @@
-import React from 'react';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Loader2Icon } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 
 type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
   loading?: boolean;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
 }
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-navy-800 text-white hover:bg-navy-900 disabled:bg-navy-300',
-  secondary: 'bg-teal-600 text-white hover:bg-teal-700 disabled:bg-teal-300',
-  outline: 'border border-navy-200 bg-white text-navy-800 hover:border-navy-300 hover:bg-navy-50',
-  ghost: 'text-navy-700 hover:bg-navy-100',
-  danger: 'border border-red-200 bg-white text-red-700 hover:bg-red-50'
+  primary:
+    'border border-brand bg-brand text-content-inverse shadow-sm hover:border-brand-hover hover:bg-brand-hover active:border-brand-pressed active:bg-brand-pressed',
+  secondary:
+    'border border-accent bg-accent text-content-inverse shadow-sm hover:border-accent-hover hover:bg-accent-hover active:border-accent-pressed active:bg-accent-pressed',
+  outline:
+    'border border-line-strong bg-surface text-content-strong shadow-sm hover:border-brand/30 hover:bg-brand-subtle active:bg-navy-100',
+  ghost: 'border border-transparent text-content hover:bg-brand-subtle active:bg-navy-100',
+  danger:
+    'border border-danger bg-danger text-white shadow-sm hover:bg-red-800 active:bg-red-900'
 };
 
 const sizes: Record<Size, string> = {
-  sm: 'h-9 px-3 text-[13px]',
-  md: 'h-11 px-4 text-sm',
-  lg: 'h-12 px-6 text-[15px]'
+  sm: 'min-h-11 px-3 text-sm',
+  md: 'min-h-11 px-4 text-sm',
+  lg: 'min-h-12 px-6 text-base'
 };
 
 export function Button({
@@ -41,15 +45,23 @@ export function Button({
     <button
       type={type}
       disabled={disabled || loading}
+      aria-busy={loading || undefined}
+      data-loading={loading || undefined}
       className={twMerge(
-        'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-70',
+        'inline-flex select-none items-center justify-center gap-2 rounded-control font-semibold transition-[background-color,border-color,color,box-shadow,transform] duration-fast focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus/20 active:translate-y-px disabled:pointer-events-none disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-55 motion-reduce:transform-none',
         variants[variant],
         sizes[size],
         className
       )}
       {...rest}>
       
-      {loading ? <Loader2Icon className="h-4 w-4 animate-spin" aria-hidden="true" /> : icon}
+      {loading ? (
+        <Loader2Icon className="h-4 w-4 shrink-0 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+      ) : icon ? (
+        <span className="inline-flex shrink-0" aria-hidden="true">
+          {icon}
+        </span>
+      ) : null}
       {children}
     </button>);
 

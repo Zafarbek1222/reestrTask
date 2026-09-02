@@ -1,5 +1,6 @@
 package adliya.uz.task1.service;
 
+import adliya.uz.task1.dto.AddLanguageRequest;
 import adliya.uz.task1.dto.LanguageCatalogItem;
 import adliya.uz.task1.dto.LanguageSearchResult;
 import adliya.uz.task1.entity.Language;
@@ -8,29 +9,41 @@ import adliya.uz.task1.repository.LanguageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.IllformedLocaleException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class LanguageService {
 
-    private static final Set<String> ISO_CODES = Set.copyOf(Arrays.asList(Locale.getISOLanguages()));
+    private static final List<Locale> AVAILABLE_LOCALES = Arrays.stream(Locale.getAvailableLocales())
+            .filter(locale -> StringUtils.hasText(locale.getLanguage()))
+            .filter(locale -> !"und".equalsIgnoreCase(locale.toLanguageTag()))
+            .collect(Collectors.toMap(
+                    Locale::toLanguageTag,
+                    Function.identity(),
+                    (first, ignored) -> first,
+                    LinkedHashMap::new
+            ))
+            .values()
+            .stream()
+            .toList();
 
     private final LanguageRepository languageRepository;
-    private final OrganizationTranslationService organizationTranslationService;
-    private final FunctionCatalogTranslationClient functionCatalogTranslationClient;
-    private final InterfaceTranslationClient interfaceTranslationClient;
 
     public List<LanguageCatalogItem> getCatalog() {
-        return ISO_CODES.stream()
-                .map(LanguageCatalogItem::fromCode)
-                .sorted(Comparator.comparing(LanguageCatalogItem::nameNative))
+        return AVAILABLE_LOCALES.stream()
+                .map(locale -> new LanguageCatalogItem(locale.toLanguageTag(), nativeName(locale)))
+                .sorted(Comparator.comparing(LanguageCatalogItem::nameNative, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
 
@@ -39,54 +52,54 @@ public class LanguageService {
     }
 
     public List<LanguageSearchResult> search(String query) {
-        if (query == null || query.isBlank()) {
+        if (!StringUtils.hasText(query)) {
             return List.of();
         }
 
         String needle = query.trim().toLowerCase(Locale.ROOT);
-        Set<String> activeCodes = languageRepository.findAllByActiveTrue().stream()
+        Set<String> addedCodes = languageRepository.findAll().stream()
                 .map(Language::getCode)
+                .map(code -> code.toLowerCase(Locale.ROOT))
                 .collect(Collectors.toSet());
 
-        return ISO_CODES.stream()
-                .map(code -> {
-                    Locale locale = Locale.forLanguageTag(code);
-                    return new LanguageSearchResult(
-                            code,
-                            locale.getDisplayLanguage(Locale.ENGLISH),
-                            locale.getDisplayLanguage(locale),
-                            activeCodes.contains(code)
-                    );
-                })
-                .filter(language -> language.code().contains(needle)
+        return AVAILABLE_LOCALES.stream()
+                .map(locale -> new LanguageSearchResult(
+                        locale.toLanguageTag(),
+                        englishName(locale),
+                        nativeName(locale),
+                        addedCodes.contains(locale.toLanguageTag().toLowerCase(Locale.ROOT))
+                ))
+                .filter(language -> language.code().toLowerCase(Locale.ROOT).contains(needle)
                         || language.name().toLowerCase(Locale.ROOT).contains(needle)
                         || language.nativeName().toLowerCase(Locale.ROOT).contains(needle))
-                .sorted(Comparator.comparing(LanguageSearchResult::name))
+                .sorted(Comparator.comparing(LanguageSearchResult::name, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
 
     @Transactional
-    public Language add(String rawCode) {
-        String code = rawCode.trim().toLowerCase(Locale.ROOT);
-        if (!ISO_CODES.contains(code)) {
-            throw new IllegalArgumentException("Unsupported ISO-639-1 language code: " + rawCode);
-        }
-        if (languageRepository.existsByCode(code)) {
+    public Language add(AddLanguageRequest request) {
+        Locale locale = parseLocale(request.code());
+        String code = locale.toLanguageTag();
+        if (languageRepository.existsByCodeIgnoreCase(code)) {
             throw new IllegalStateException("Language already enabled: " + code);
         }
 
-        Locale locale = Locale.forLanguageTag(code);
-        Language language = languageRepository.save(Language.builder()
+        String requestedNativeName = request.nativeName();
+        String resolvedNativeName = StringUtils.hasText(requestedNativeName)
+                ? requestedNativeName.trim()
+                : nativeName(locale);
+
+        return languageRepository.save(Language.builder()
                 .code(code)
-                .nameNative(locale.getDisplayLanguage(locale))
+                .nameNative(resolvedNativeName)
                 .isDefault(false)
                 .active(true)
                 .build());
+    }
 
-        organizationTranslationService.translateExistingForLanguage(code);
-        functionCatalogTranslationClient.translateExistingForLanguage(code);
-        interfaceTranslationClient.translateInterfaceForLanguage(code);
-        return language;
+    @Transactional
+    public Language add(String rawCode) {
+        return add(new AddLanguageRequest(rawCode));
     }
 
     @Transactional
@@ -97,5 +110,40 @@ public class LanguageService {
             throw new IllegalStateException("The default language cannot be removed: " + language.getCode());
         }
         languageRepository.delete(language);
+    }
+
+    private Locale parseLocale(String rawCode) {
+        if (!StringUtils.hasText(rawCode)) {
+            throw new IllegalArgumentException("Language code is required");
+        }
+        try {
+            Locale locale = new Locale.Builder()
+                    .setLanguageTag(rawCode.trim().replace('_', '-'))
+                    .build();
+            if (!StringUtils.hasText(locale.getLanguage()) || "und".equalsIgnoreCase(locale.toLanguageTag())) {
+                throw new IllegalArgumentException("Invalid BCP 47 language tag: " + rawCode);
+            }
+            if (locale.toLanguageTag().length() > 64) {
+                throw new IllegalArgumentException("Language code must be at most 64 characters: " + rawCode);
+            }
+            return locale;
+        } catch (IllformedLocaleException exception) {
+            throw new IllegalArgumentException("Invalid BCP 47 language tag: " + rawCode, exception);
+        }
+    }
+
+    private static String englishName(Locale locale) {
+        String value = locale.getDisplayName(Locale.ENGLISH);
+        return StringUtils.hasText(value) ? value : locale.toLanguageTag();
+    }
+
+    private static String nativeName(Locale locale) {
+        String value = locale.getDisplayName(locale);
+        if (!StringUtils.hasText(value) || value.length() > 100) {
+            value = locale.getDisplayLanguage(locale);
+        }
+        return StringUtils.hasText(value) && value.length() <= 100
+                ? value
+                : locale.toLanguageTag();
     }
 }

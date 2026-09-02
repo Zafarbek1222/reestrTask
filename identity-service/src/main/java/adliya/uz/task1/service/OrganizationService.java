@@ -19,7 +19,7 @@ import java.util.Objects;
 public class OrganizationService {
 
     private final OrganizationRepository organizationRepository;
-    private final OrganizationTranslationService translationService;
+    private final OrganizationTranslationStateService translationStateService;
 
     @Transactional
     public Organization create(CreateOrganizationRequest request) {
@@ -34,9 +34,8 @@ public class OrganizationService {
                 .enabled(true)
                 .build();
 
-        org = organizationRepository.save(org);
-        translationService.translateChangedFields(org, true, request.getDescription() != null);
-        return org;
+        translationStateService.invalidateMachineTranslations(org, true, request.getDescription() != null);
+        return organizationRepository.save(org);
     }
 
     public Organization getById(Long id) {
@@ -68,9 +67,8 @@ public class OrganizationService {
             org.setDescription(request.getDescription());
         }
 
-        org = organizationRepository.save(org);
-        translationService.translateChangedFields(org, nameChanged, descriptionChanged);
-        return org;
+        translationStateService.invalidateMachineTranslations(org, nameChanged, descriptionChanged);
+        return organizationRepository.save(org);
     }
 
     @Transactional

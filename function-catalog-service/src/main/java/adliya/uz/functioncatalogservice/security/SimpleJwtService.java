@@ -1,36 +1,26 @@
 package adliya.uz.functioncatalogservice.security;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.security.interfaces.RSAPublicKey;
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 
 @Service
 public class SimpleJwtService {
 
-    private static final String JWT_ALGORITHM = "RS256";
+    private final SecretKey secretKey;
 
-    private final RSAPublicKey publicKey;
-
-    public SimpleJwtService(@Value("${jwt.public-key}") String publicKey) {
-        this.publicKey = RsaPublicKeyLoader.load(publicKey);
+    public SimpleJwtService(@Value("${jwt.secret}") String secret) {
+        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
     public Claims parseClaims(String token) {
-        Jws<Claims> parsedToken = Jwts.parser()
-                .verifyWith(publicKey)
-                .build()
-                .parseSignedClaims(token);
-
-        if (!JWT_ALGORITHM.equals(parsedToken.getHeader().getAlgorithm())) {
-            throw new UnsupportedJwtException("Only RS256 JWT signatures are accepted");
-        }
-
-        Claims claims = parsedToken.getPayload();
+        Claims claims = Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload();
         if (!Boolean.FALSE.equals(claims.get("mustChangePassword", Boolean.class))) {
             throw new UnsupportedJwtException(
                     "JWT cannot authorize service access until the password has been changed"

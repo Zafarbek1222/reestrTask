@@ -16,7 +16,7 @@ public record LanguageResponse(
         boolean defaultLanguage
 ) {
     public static LanguageResponse from(Language language) {
-        String name = Locale.forLanguageTag(language.getCode()).getDisplayLanguage(Locale.ENGLISH);
+        String name = Locale.forLanguageTag(language.getCode()).getDisplayName(Locale.ENGLISH);
         return new LanguageResponse(
                 language.getId(),
                 language.getCode(),
